@@ -1,0 +1,456 @@
+#include "RuyiSDKManager.h"
+
+//FRuyiSDKManager* FRuyiSDKManager::m_Instance = new FRuyiSDKManager();
+FRuyiSDKManager* FRuyiSDKManager::Instance() 
+{
+	static FRuyiSDKManager* m_Instance = new FRuyiSDKManager();
+	return m_Instance;
+}
+
+Ruyi::RuyiSDK* FRuyiSDKManager::SDK() 
+{
+	return m_RuyiSDK;
+}
+
+FRuyiSDKManager::FRuyiSDKManager() 
+{
+	InitRuyiSDK();
+}
+
+void FRuyiSDKManager::InitRuyiSDK() 
+{
+	UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK  !!!!!!!!!!!!!!!!!!!!!!"));
+	try
+	{
+		auto context = new Ruyi::RuyiSDKContext(Ruyi::RuyiSDKContext::Endpoint::PC, "localhost");
+		m_RuyiSDK = Ruyi::RuyiSDK::CreateSDKInstance(*context);
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Success !!!"));
+	}
+	catch (exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Fail !!!"));
+	}
+}
+
+#pragma region ruyi sdk request for public call
+void FRuyiSDKManager::StartRuyiSDKLogin(FString& username, FString& password, RuyiSDKRequestType requestType)
+{
+	m_Username = username;
+	m_Password = password;
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKLoginout(RuyiSDKRequestType requestType)
+{
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKFriendList(RuyiSDKRequestType requestType) 
+{
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKAddFriends(TArray<FString>& profileIds, RuyiSDKRequestType requestType)
+{
+	m_RuyiSDKRequestType = requestType;
+	m_AddOrRemoveFriendIds.Empty();
+	m_AddOrRemoveFriendIds.Append(profileIds);
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKRemoveFriends(TArray<FString>& profileIds, RuyiSDKRequestType requestType)
+{
+	m_RuyiSDKRequestType = requestType;
+	m_AddOrRemoveFriendIds.Empty();
+	m_AddOrRemoveFriendIds.Append(profileIds);
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKMatchMakingFindPlayers(int rangeDelta, int numMatches, RuyiSDKRequestType requestType)
+{
+	m_MatchesRangeDelta = rangeDelta;
+	m_NumMatches = numMatches;
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+#pragma endregion
+
+#pragma region ruyi sdk async request
+void FRuyiSDKManager::Ruyi_AsyncSDKLogin(FString& username, FString& password)
+{
+	try
+	{
+		m_RuyiSDK->BCService->Authentication_ClearSavedProfileID(0);
+	}
+	catch (exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLogin Authentication_ClearSavedProfileID exception !!!"));
+	}
+
+	string userNameString(TCHAR_TO_UTF8(*username));
+	string passwordString(TCHAR_TO_UTF8(*password));
+
+	try
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLogin username:%s password:%s !!!"), *username, *password);
+
+		string ret;
+		m_RuyiSDK->BCService->Authentication_AuthenticateEmailPassword(ret, userNameString, passwordString, false, 0);
+
+		FString fRet = UTF8_TO_TCHAR(ret.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLogin ret:%s !!!"), *fRet);
+
+		TSharedPtr<FJsonObject> jsonParsed;
+		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
+
+		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+		{
+			int status = jsonParsed->GetIntegerField("status");
+
+			if (JSON_RESPONSE_OK == status)
+			{
+				UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoginr Login Success !!!"));
+				
+				m_mutex.Lock();
+				
+				MainWidget->IsLogin = true;
+
+				TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
+
+				MainWidget->PlayerProfile.profileName = dataJsonObject->GetStringField("playerName");
+				MainWidget->PlayerProfile.email = dataJsonObject->GetStringField("emailAddress");
+				MainWidget->PlayerProfile.profileId = dataJsonObject->GetStringField("id");
+				
+				FString pictureUrl("");
+				if (dataJsonObject->TryGetStringField("pictureUrl", pictureUrl)) 
+				{
+					MainWidget->PlayerProfile.pictureUrl = pictureUrl;
+				} else 
+				{
+					MainWidget->PlayerProfile.pictureUrl = TEXT("");
+				}
+				
+				m_mutex.Unlock();
+			}
+		}
+	}
+	catch (exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncLoginTestUser Authentication_AuthenticateEmailPassword exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKLoginOut() 
+{
+	try
+	{
+		m_RuyiSDK->BCService->Authentication_ClearSavedProfileID(0);
+
+		MainWidget->IsLogin = false;
+		MainWidget->IsRequestFinish = true;
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoginOut Success !!!"));
+	}
+	catch (exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoginOut Authentication_ClearSavedProfileID exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKFriendList() 
+{
+	try
+	{
+		std::string ret;
+		m_RuyiSDK->BCService->Friend_ListFriends(ret, Ruyi::SDK::BrainCloudApi::FriendPlatform::brainCloud, true, 0);
+
+		FString fstring = FString(ret.c_str());
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList %s !!!"), *fstring);
+
+		if (0 == fstring.Compare("")) return;
+
+		ParseFriendListData(fstring);
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList friends Num:%d !!!"), MainWidget->Friends.Num());
+	}
+	catch (exception e)
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Login Error !!! Friend_ListFriends exception"));
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList Request exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKAddFriends(TArray<FString>& friendIds)
+{
+	try 
+	{
+		std::vector<string> vecFriendId;
+		for (FString& id : friendIds)
+		{
+			string idStr(TCHAR_TO_UTF8(*id));
+			vecFriendId.push_back(idStr);
+
+			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends add friend id:%s"), *id);
+		}
+
+		string ret;
+		m_RuyiSDK->BCService->Friend_AddFriends(ret, vecFriendId, 0);
+		m_RuyiSDK->BCService->Friend_ListFriends(ret, Ruyi::SDK::BrainCloudApi::FriendPlatform::brainCloud, true, 0);
+
+		FString fRet = UTF8_TO_TCHAR(ret.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends fRet:%s"), *fRet);
+
+		ParseFriendListData(fRet);
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends friends Num:%d !!!"), MainWidget->Friends.Num());
+	}catch(exception e) 
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends Friend_AddFriends exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendIds)
+{
+	try
+	{
+		std::vector<string> vecFriendId;
+		for (FString& id : friendIds)
+		{
+			string idStr(TCHAR_TO_UTF8(*id));
+			vecFriendId.push_back(idStr);
+
+			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends add friend id:%s"), *id);
+		}
+
+		string ret;
+		m_RuyiSDK->BCService->Friend_RemoveFriends(ret, vecFriendId, 0);
+		m_RuyiSDK->BCService->Friend_ListFriends(ret, Ruyi::SDK::BrainCloudApi::FriendPlatform::brainCloud, true, 0);
+
+		FString fRet = UTF8_TO_TCHAR(ret.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends fRet:%s"), *fRet);
+
+		ParseFriendListData(fRet);
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends friends Num:%d !!!"), MainWidget->Friends.Num());
+	}
+	catch (exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends Friend_AddFriends exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers(int rangeDelta, int numMatches)
+{
+	try
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers range:%d num:%d !!!"), rangeDelta, numMatches);
+
+		string ret;
+		m_RuyiSDK->BCService->MatchMaking_FindPlayers(ret, rangeDelta, numMatches, 0);
+
+		FString fRet = UTF8_TO_TCHAR(ret.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers ret:%s !!!"), *fRet);
+
+		TSharedPtr<FJsonObject> jsonParsed;
+		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
+
+		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+		{
+			int status = jsonParsed->GetIntegerField("status");
+
+			if (JSON_RESPONSE_OK == status)
+			{
+				m_mutex.Lock();
+				MainWidget->Matches.Empty();
+				m_mutex.Unlock();
+
+				TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
+
+				TArray<TSharedPtr<FJsonValue>> matches = dataJsonObject->GetArrayField("matchesFound");
+
+				for (int i = 0; i < matches.Num(); ++i)
+				{
+					FRuyiNetProfile playerProfile;
+					FString name("");
+					FString pictureUrl("");
+					FString playerId("");
+
+					if (matches[i]->AsObject()->TryGetStringField("playerId", playerId))
+					{
+						playerProfile.profileId = playerId;
+					}
+					if (matches[i]->AsObject()->TryGetStringField("name", name))
+					{
+						playerProfile.profileName = name;
+					}
+					if (matches[i]->AsObject()->TryGetStringField("pictureUrl", pictureUrl))
+					{
+						playerProfile.pictureUrl = pictureUrl;
+					}
+					
+					m_mutex.Lock();
+					MainWidget->Matches.Add(playerProfile);
+					m_mutex.Unlock();
+				}
+			}
+		}
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers num:%d !!!"), MainWidget->Matches.Num());
+	}
+	catch (exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("ARuyiSDKSampleCharacter::MatchMaking_FindPlayers exception  !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+#pragma endregion
+
+#pragma region data handle
+void FRuyiSDKManager::ParseFriendListData(FString& jsonData) 
+{
+	TSharedPtr<FJsonObject> jsonParsed;
+	TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(jsonData);
+
+	if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+	{
+		int status = jsonParsed->GetIntegerField("status");
+
+		if (JSON_RESPONSE_OK == status)
+		{
+			m_mutex.Lock();
+			MainWidget->Friends.Empty();
+			m_mutex.Unlock();
+
+			TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
+			TArray<TSharedPtr<FJsonValue>> friendArray = dataJsonObject->GetArrayField("friends");
+			for (int i = 0; i < friendArray.Num(); ++i)
+			{
+				FRuyiNetProfile friendProfile;
+
+				FString name("");
+				FString pictureUrl("");
+				FString playerId("");
+
+				if (friendArray[i]->AsObject()->TryGetStringField("playerId", playerId))
+				{
+					friendProfile.profileId = playerId;
+				}
+				if (friendArray[i]->AsObject()->TryGetStringField("playerName", name))
+				{
+					friendProfile.profileName = name;
+				}
+				if (friendArray[i]->AsObject()->TryGetStringField("pictureUrl", pictureUrl))
+				{
+					friendProfile.pictureUrl = pictureUrl;
+				}
+
+				m_mutex.Lock();
+				MainWidget->Friends.Add(friendProfile);
+				m_mutex.Unlock();
+			}
+		}
+	}
+}
+
+#pragma endregion
+
+#pragma region multi-thread
+bool FRuyiSDKManager::Init()
+{
+	m_ThreadEnd = false;
+	m_ThreadBegin = false;
+	m_Thread = nullptr;
+
+	return true;
+}
+
+uint32 FRuyiSDKManager::Run()
+{
+	while (!m_ThreadEnd)
+	{
+		if (!m_ThreadBegin)
+		{
+			m_ThreadBegin = true;
+
+			switch(m_RuyiSDKRequestType)
+			{
+			case RuyiSDKRequestType::RuyiSDKRequestTypeLogin:
+				Ruyi_AsyncSDKLogin(m_Username, m_Password);
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestTypeLoginOut:
+				Ruyi_AsyncSDKLoginOut();
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestTypeFriendList:
+				Ruyi_AsyncSDKFriendList();
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestTypeAddFriends:
+				Ruyi_AsyncSDKAddFriends(m_AddOrRemoveFriendIds);
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestTypeRemoveFriends:
+				Ruyi_AsyncSDKRemoveFriends(m_AddOrRemoveFriendIds);
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestTypeMatchMaking:
+				Ruyi_AsyncSDKMatchMakingFindPlayers(m_MatchesRangeDelta, m_NumMatches);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+
+void FRuyiSDKManager::StartThread()
+{
+	m_ThreadBegin = false;
+	m_ThreadEnd = false;
+	m_Thread = FRunnableThread::Create(this, TEXT(""), 0, TPri_BelowNormal);
+}
+
+void FRuyiSDKManager::EndThread()
+{
+	m_ThreadEnd = true;
+
+	if (nullptr != m_Thread)
+	{
+		m_Thread->Kill();
+		delete m_Thread;
+		m_Thread = nullptr;
+	}
+}
+
+#pragma endregion
