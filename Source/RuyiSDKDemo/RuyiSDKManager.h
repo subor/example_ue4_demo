@@ -29,6 +29,8 @@ public:
 	void StartRuyiSDKMatchMakingFindPlayers(int rangeDelta, int numMatches, RuyiSDKRequestType requestType);
 	void StartRuyiSDKAddFriends(TArray<FString>& profileIds, RuyiSDKRequestType requestType);
 	void StartRuyiSDKRemoveFriends(TArray<FString>& profileIds, RuyiSDKRequestType requestType);
+	void StartRuyiSDKSave(FString id, int Score, RuyiSDKRequestType requestType);
+	void StartRuyiSDKLoad(struct FRuyiNetProfile* profile, RuyiSDKRequestType requestType);
 
 	RuyiSDKRequestType m_RuyiSDKRequestType;
 
@@ -52,7 +54,14 @@ private:
 
 	TArray<FString> m_AddOrRemoveFriendIds;
 
-	void ParseFriendListData(FString& jsonData);
+	FString m_PlayerId;
+	int m_Score;
+	FRuyiNetProfile* m_Profile;
+	void ParseFriendListData(FString& jsonData, FString nameField);
+
+	FString m_SaveCloudFileName;
+	void WriteSaveFileList(std::map<FString, FString>& saveList);
+	void ReadSaveFileList();
 
 	//async request
 	void Ruyi_AsyncSDKLogin(FString& username, FString& password);
@@ -61,6 +70,8 @@ private:
 	void Ruyi_AsyncSDKMatchMakingFindPlayers(int rangeDelta, int numMatches);
 	void Ruyi_AsyncSDKAddFriends(TArray<FString>& friendIds);
 	void Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendsIds);
+	void Ruyi_AsyncSDKSave(FString playerId, int score);
+	void Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile);
 
 	//multi-thread
 	void StartThread();

@@ -68,8 +68,8 @@ void ARuyiSDKDemoCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
-	PlayerInputComponent->BindAxis("MoveForward", this, &ARuyiSDKDemoCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &ARuyiSDKDemoCharacter::MoveRight);
+	PlayerInputComponent->BindAxis("MoveForward_1P", this, &ARuyiSDKDemoCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight_1P", this, &ARuyiSDKDemoCharacter::MoveRight);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -80,11 +80,11 @@ void ARuyiSDKDemoCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ARuyiSDKDemoCharacter::LookUpAtRate);
 
 	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &ARuyiSDKDemoCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &ARuyiSDKDemoCharacter::TouchStopped);
+	//PlayerInputComponent->BindTouch(IE_Pressed, this, &ARuyiSDKDemoCharacter::TouchStarted);
+	//PlayerInputComponent->BindTouch(IE_Released, this, &ARuyiSDKDemoCharacter::TouchStopped);
 
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ARuyiSDKDemoCharacter::OnResetVR);
+	// VR headset functionalit
+	//PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ARuyiSDKDemoCharacter::OnResetVR);
 }
 
 

@@ -16,6 +16,8 @@ enum class RuyiSDKRequestType : uint8
 	RuyiSDKRequestTypeAddFriends,
 	RuyiSDKRequestTypeRemoveFriends,
 	RuyiSDKRequestTypeMatchMaking,
+	RuyiSDKRequestGameSave,
+	RuyiSDKRequestGameLoad,
 };
 
 

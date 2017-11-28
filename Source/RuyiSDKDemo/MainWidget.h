@@ -87,6 +87,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|AsyncMatch")
 	void Ruyi_StartMatchMakingFindPlayers(int rangeDelta, int numMatches);
 
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|AsyncMatch")
+	void Ruyi_StartSave(int score);
+
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|AsyncMatch")
+	void Ruyi_StartLoad();
+
 	UFUNCTION(BlueprintCallable, Category = "MainWidget")
 	void OpenFileDialog(FString& filePath);
 
@@ -115,6 +121,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
 	bool IsLogin;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
+	bool IsSaveSucceed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
 	bool IsRequestFinish;

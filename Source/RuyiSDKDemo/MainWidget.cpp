@@ -5,6 +5,7 @@
 #include "FileHelper.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
+#include "RuyiSDKDemoCharacter.h"
 
 
 void UMainWidget::InitSDK() 
@@ -60,6 +61,22 @@ void UMainWidget::Ruyi_StartMatchMakingFindPlayers(int rangeDelta, int numMatche
 	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestTypeMatchMaking;
 	FRuyiSDKManager::Instance()->StartRuyiSDKMatchMakingFindPlayers(rangeDelta, numMatches, SDKRequestType);
 }
+
+void UMainWidget::Ruyi_StartSave(int score) 
+{
+	IsRequestFinish = false;
+	IsSaveSucceed = false;
+	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestGameSave;
+	FRuyiSDKManager::Instance()->StartRuyiSDKSave(PlayerProfile.profileId, score, SDKRequestType);
+}
+
+void UMainWidget::Ruyi_StartLoad() 
+{
+	IsRequestFinish = false;
+	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestGameLoad;
+	FRuyiSDKManager::Instance()->StartRuyiSDKLoad(&PlayerProfile, SDKRequestType);
+}
+
 #pragma endregion
 
 void UMainWidget::OpenFileDialog(FString& filePath)

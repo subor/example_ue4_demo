@@ -1,4 +1,7 @@
 #include "RuyiSDKManager.h"
+#include "MainWidget.h"
+#include "RuyiSDKDemoCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 //FRuyiSDKManager* FRuyiSDKManager::m_Instance = new FRuyiSDKManager();
 FRuyiSDKManager* FRuyiSDKManager::Instance() 
@@ -15,6 +18,8 @@ Ruyi::RuyiSDK* FRuyiSDKManager::SDK()
 FRuyiSDKManager::FRuyiSDKManager() 
 {
 	InitRuyiSDK();
+
+	ReadSaveFileList();
 }
 
 void FRuyiSDKManager::InitRuyiSDK() 
@@ -74,6 +79,21 @@ void FRuyiSDKManager::StartRuyiSDKMatchMakingFindPlayers(int rangeDelta, int num
 {
 	m_MatchesRangeDelta = rangeDelta;
 	m_NumMatches = numMatches;
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKSave(FString id, int Score, RuyiSDKRequestType requestType)
+{
+	m_PlayerId = id;
+	m_Score = Score;
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKLoad(FRuyiNetProfile* profile, RuyiSDKRequestType requestType)
+{
+	m_Profile = profile;
 	m_RuyiSDKRequestType = requestType;
 	StartThread();
 }
@@ -183,7 +203,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKFriendList()
 
 		if (0 == fstring.Compare("")) return;
 
-		ParseFriendListData(fstring);
+		ParseFriendListData(fstring, TEXT("name"));
 
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList friends Num:%d !!!"), MainWidget->Friends.Num());
 	}
@@ -219,7 +239,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKAddFriends(TArray<FString>& friendIds)
 
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends fRet:%s"), *fRet);
 
-		ParseFriendListData(fRet);
+		ParseFriendListData(fRet, TEXT("name"));
 
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends friends Num:%d !!!"), MainWidget->Friends.Num());
 	}catch(exception e) 
@@ -253,7 +273,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendIds)
 
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends fRet:%s"), *fRet);
 
-		ParseFriendListData(fRet);
+		ParseFriendListData(fRet, TEXT("name"));
 
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends friends Num:%d !!!"), MainWidget->Friends.Num());
 	}
@@ -308,7 +328,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers(int rangeDelta, int nu
 					{
 						playerProfile.profileId = playerId;
 					}
-					if (matches[i]->AsObject()->TryGetStringField("name", name))
+					if (matches[i]->AsObject()->TryGetStringField("playerName", name))
 					{
 						playerProfile.profileName = name;
 					}
@@ -336,10 +356,110 @@ void FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers(int rangeDelta, int nu
 	EndThread();
 }
 
+void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score) 
+{
+	FString jsonStr;
+	TSharedRef<TJsonWriter<TCHAR>> jsonWriter = TJsonWriterFactory<>::Create(&jsonStr);
+
+	jsonWriter->WriteObjectStart();
+
+	jsonWriter->WriteObjectStart("Saving");
+	jsonWriter->WriteValue("playerId:", playerId);
+	jsonWriter->WriteValue("Score:", score);
+	jsonWriter->WriteObjectEnd();
+
+	jsonWriter->WriteObjectEnd();
+
+	jsonWriter->Close();
+
+	FString path = FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir());
+	UE_LOG(CommonLog, Log, TEXT("UMainWidget::Ruyi_StartSave path%s !!!"), *path);
+	FString fileName = TEXT("Saving1.sav");
+	path += fileName;
+
+	//FArchive* saveFile = GFileManager->CreateFileWriter(*path);
+	FArchive* saveFile = IFileManager::Get().CreateFileWriter(*path);
+	if (!saveFile) return;
+
+	*saveFile << jsonStr;
+	delete saveFile;
+
+	try 
+	{
+		string cloudPath = "test/files";
+		string localPath = (TCHAR_TO_UTF8(*path));
+
+		string ret;
+		m_RuyiSDK->BCService->File_UploadFile(ret, cloudPath, "unrealRuyiSDKDemo.sav", true, true, localPath, 0);
+
+		FString fRet = UTF8_TO_TCHAR(ret.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSave ret:%s !!!"), *fRet);
+		
+		TSharedPtr<FJsonObject> jsonParsed;
+		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
+
+		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+		{
+			int status = jsonParsed->GetIntegerField("status");
+
+			if (JSON_RESPONSE_OK == status)
+			{
+				TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
+				TSharedPtr<FJsonObject> fileDetailsJsonObject = dataJsonObject->GetObjectField("fileDetails");
+				if (fileDetailsJsonObject.IsValid())
+				{
+					m_mutex.Lock();
+					if (fileDetailsJsonObject->TryGetStringField("cloudFilename", m_SaveCloudFileName))
+					{					
+						MainWidget->IsSaveSucceed = true;
+						std::map<FString, FString> saveData;
+						saveData[m_SaveCloudFileName] = fileName;
+						WriteSaveFileList(saveData);
+					}
+					m_mutex.Unlock();
+				}
+			}
+		}
+	}catch(exception e) 
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSave exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile)
+{
+	try
+	{/*
+		FString path = FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir());
+		FString fileName = TEXT("SavingList.dat");
+		path += fileName;
+
+		//FArchive* saveFile = GFileManager->CreateFileWriter(*path);
+		FArchive* readFile = IFileManager::Get().CreateFileReader(*path);
+
+		FString jsonStr;
+		*readFile << jsonStr;
+
+		string cloudPath = "test/files";
+		string ret;
+		string cloudFileName = TCHAR_TO_UTF8(*m_SaveCloudFileName);
+		m_RuyiSDK->BCService->File_DownloadFile(ret, cloudPath, cloudFileName, true, 0);
+		*/
+	}catch(exception e)
+	{
+		
+	}
+}
+
 #pragma endregion
 
 #pragma region data handle
-void FRuyiSDKManager::ParseFriendListData(FString& jsonData) 
+void FRuyiSDKManager::ParseFriendListData(FString& jsonData, FString nameField)
 {
 	TSharedPtr<FJsonObject> jsonParsed;
 	TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(jsonData);
@@ -368,7 +488,7 @@ void FRuyiSDKManager::ParseFriendListData(FString& jsonData)
 				{
 					friendProfile.profileId = playerId;
 				}
-				if (friendArray[i]->AsObject()->TryGetStringField("playerName", name))
+				if (friendArray[i]->AsObject()->TryGetStringField(nameField, name))
 				{
 					friendProfile.profileName = name;
 				}
@@ -385,6 +505,40 @@ void FRuyiSDKManager::ParseFriendListData(FString& jsonData)
 	}
 }
 
+void FRuyiSDKManager::WriteSaveFileList(std::map<FString, FString>& saveList)
+{
+	FString jsonStr;
+	TSharedRef<TJsonWriter<TCHAR>> jsonWriter = TJsonWriterFactory<>::Create(&jsonStr);
+
+	jsonWriter->WriteObjectStart();
+
+	jsonWriter->WriteObjectStart("Saving");
+	jsonWriter->WriteArrayStart();
+	for (std::map<FString, FString>::iterator it = saveList.begin(); it != saveList.end(); ++it) 
+	{
+		jsonWriter->WriteValue(it->first, it->second);
+	}
+	jsonWriter->WriteArrayEnd();
+	jsonWriter->WriteObjectEnd();
+
+	jsonWriter->WriteObjectEnd();
+
+	jsonWriter->Close();
+
+	FString path = FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir());
+
+	FString fileName = TEXT("SaveList.Dat");
+	path += fileName;
+
+	//FArchive* saveFile = GFileManager->CreateFileWriter(*path);
+	FArchive* saveFile = IFileManager::Get().CreateFileWriter(*path);
+	if (!saveFile) return;
+
+	*saveFile << jsonStr;
+	delete saveFile;
+}
+
+void FRuyiSDKManager::ReadSaveFileList() {}
 #pragma endregion
 
 #pragma region multi-thread
@@ -424,6 +578,12 @@ uint32 FRuyiSDKManager::Run()
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestTypeMatchMaking:
 				Ruyi_AsyncSDKMatchMakingFindPlayers(m_MatchesRangeDelta, m_NumMatches);
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestGameSave:
+				Ruyi_AsyncSDKSave(m_PlayerId, m_Score);
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestGameLoad:
+				Ruyi_AsyncSDKLoad(m_Profile);
 				break;
 			default:
 				break;
