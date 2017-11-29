@@ -60,8 +60,7 @@ private:
 	void ParseFriendListData(FString& jsonData, FString nameField);
 
 	FString m_SaveCloudFileName;
-	void WriteSaveFileList(std::map<FString, FString>& saveList);
-	void ReadSaveFileList();
+	void ReadSaveFile(FString& localPath);
 
 	//async request
 	void Ruyi_AsyncSDKLogin(FString& username, FString& password);

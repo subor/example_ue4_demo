@@ -120,6 +120,12 @@ public:
 	TArray<FRuyiNetProfile> Matches;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
+	int Score1P;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
+	int Score2P;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
 	bool IsLogin;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")

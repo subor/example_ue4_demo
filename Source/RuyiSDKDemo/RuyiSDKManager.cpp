@@ -19,7 +19,7 @@ FRuyiSDKManager::FRuyiSDKManager()
 {
 	InitRuyiSDK();
 
-	ReadSaveFileList();
+	m_SaveCloudFileName = TEXT("unrealRuyiSDKDemo1.sav");
 }
 
 void FRuyiSDKManager::InitRuyiSDK() 
@@ -387,10 +387,10 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score)
 	try 
 	{
 		string cloudPath = "test/files";
-		string localPath = (TCHAR_TO_UTF8(*path));
-
+		string localPath = TCHAR_TO_UTF8(*path);
+		string cloudFileName = TCHAR_TO_UTF8(*m_SaveCloudFileName);
 		string ret;
-		m_RuyiSDK->BCService->File_UploadFile(ret, cloudPath, "unrealRuyiSDKDemo.sav", true, true, localPath, 0);
+		m_RuyiSDK->BCService->File_UploadFile(ret, cloudPath, cloudFileName, true, true, localPath, 0);
 
 		FString fRet = UTF8_TO_TCHAR(ret.c_str());
 
@@ -410,13 +410,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score)
 				if (fileDetailsJsonObject.IsValid())
 				{
 					m_mutex.Lock();
-					if (fileDetailsJsonObject->TryGetStringField("cloudFilename", m_SaveCloudFileName))
-					{					
-						MainWidget->IsSaveSucceed = true;
-						std::map<FString, FString> saveData;
-						saveData[m_SaveCloudFileName] = fileName;
-						WriteSaveFileList(saveData);
-					}
+					MainWidget->IsSaveSucceed = true;
 					m_mutex.Unlock();
 				}
 			}
@@ -434,26 +428,46 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score)
 void FRuyiSDKManager::Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile)
 {
 	try
-	{/*
-		FString path = FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir());
-		FString fileName = TEXT("SavingList.dat");
-		path += fileName;
-
-		//FArchive* saveFile = GFileManager->CreateFileWriter(*path);
-		FArchive* readFile = IFileManager::Get().CreateFileReader(*path);
-
-		FString jsonStr;
-		*readFile << jsonStr;
-
+	{
 		string cloudPath = "test/files";
 		string ret;
 		string cloudFileName = TCHAR_TO_UTF8(*m_SaveCloudFileName);
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoad cloudFileName:%s !!!"), *m_SaveCloudFileName);
+
 		m_RuyiSDK->BCService->File_DownloadFile(ret, cloudPath, cloudFileName, true, 0);
-		*/
+
+		FString fRet = UTF8_TO_TCHAR(ret.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoad ret:%s !!!"), *fRet);
+		TSharedPtr<FJsonObject> jsonParsed;
+		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
+
+		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed)) 
+		{
+			int status = jsonParsed->GetIntegerField("status");
+
+			if (JSON_RESPONSE_OK == status) 
+			{
+				TSharedPtr<FJsonObject> dataObject = jsonParsed->GetObjectField("data");
+				if (dataObject.IsValid()) 
+				{
+					FString localPath;
+					if (dataObject->TryGetStringField(TEXT("localPath"), localPath)) 
+					{
+						ReadSaveFile(localPath);
+					}
+				}
+			}
+		}
 	}catch(exception e)
 	{
-		
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoad File_DownloadFile exception !!!"));
 	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
 }
 
 #pragma endregion
@@ -505,40 +519,37 @@ void FRuyiSDKManager::ParseFriendListData(FString& jsonData, FString nameField)
 	}
 }
 
-void FRuyiSDKManager::WriteSaveFileList(std::map<FString, FString>& saveList)
+void FRuyiSDKManager::ReadSaveFile(FString& localPath) 
 {
+	FArchive* readFile = IFileManager::Get().CreateFileReader(*localPath);
+
 	FString jsonStr;
-	TSharedRef<TJsonWriter<TCHAR>> jsonWriter = TJsonWriterFactory<>::Create(&jsonStr);
+	*readFile << jsonStr;
 
-	jsonWriter->WriteObjectStart();
+	UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::ReadSaveFile jsonStr:%s"), *jsonStr);
 
-	jsonWriter->WriteObjectStart("Saving");
-	jsonWriter->WriteArrayStart();
-	for (std::map<FString, FString>::iterator it = saveList.begin(); it != saveList.end(); ++it) 
+	TSharedPtr<FJsonObject> jsonParsed;
+	TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(jsonStr);
+
+	if (FJsonSerializer::Deserialize(jsonReader, jsonParsed)) 
 	{
-		jsonWriter->WriteValue(it->first, it->second);
+		TSharedPtr<FJsonObject> savingObject = jsonParsed->GetObjectField("Saving");
+
+		if (savingObject.IsValid()) 
+		{
+			FString playerId = savingObject->GetStringField(TEXT("playerId:"));
+			uint32 score = savingObject->GetIntegerField(TEXT("Score:"));
+			
+			if (0 == MainWidget->PlayerProfile.profileId.Compare(playerId)) 
+			{			
+				m_mutex.Lock();
+				MainWidget->Score1P = score;
+				m_mutex.Unlock();	
+			}
+		}
 	}
-	jsonWriter->WriteArrayEnd();
-	jsonWriter->WriteObjectEnd();
-
-	jsonWriter->WriteObjectEnd();
-
-	jsonWriter->Close();
-
-	FString path = FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir());
-
-	FString fileName = TEXT("SaveList.Dat");
-	path += fileName;
-
-	//FArchive* saveFile = GFileManager->CreateFileWriter(*path);
-	FArchive* saveFile = IFileManager::Get().CreateFileWriter(*path);
-	if (!saveFile) return;
-
-	*saveFile << jsonStr;
-	delete saveFile;
 }
 
-void FRuyiSDKManager::ReadSaveFileList() {}
 #pragma endregion
 
 #pragma region multi-thread
