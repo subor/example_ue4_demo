@@ -47,10 +47,11 @@ AGameCharacter1::AGameCharacter1()
 												   // are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 	IsPaused = false;
 }
+
 void AGameCharacter1::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	//Super::SetupPlayerInputComponent(PlayerInputComponent);
-
+	
 	PlayerInputComponent->BindAxis("MoveForward_2P", this, &AGameCharacter1::MoveForward1);
 	PlayerInputComponent->BindAxis("MoveRight_2P", this, &AGameCharacter1::MoveRight);
 }

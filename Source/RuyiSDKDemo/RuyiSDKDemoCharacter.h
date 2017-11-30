@@ -7,6 +7,8 @@
 
 #include "MainWidget.h"
 
+#include "RuyiSDK.h"
+
 #include "GameFramework/Character.h"
 #include "RuyiSDKDemoCharacter.generated.h"
 
@@ -86,5 +88,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
 	int m_Score;
+
+private:
+	//void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg);
+	
 };
 

@@ -73,6 +73,8 @@ void UMainWidget::Ruyi_StartSave(int score)
 void UMainWidget::Ruyi_StartLoad() 
 {
 	IsRequestFinish = false;
+	IsLoadCloudSucceed = false;
+	IsLoadLocalSucceed = false;
 	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestGameLoad;
 	FRuyiSDKManager::Instance()->StartRuyiSDKLoad(&PlayerProfile, SDKRequestType);
 }
@@ -149,5 +151,84 @@ UTexture2D* UMainWidget::LoadTexture2D_FromFile(const FString& filePath, bool& i
 	return ret;
 }
 
+void UMainWidget::ReadSaveFile(FString localPath) 
+{
+	FString replaceFrom("\\"), replaceTo("/");
+	FString path = localPath.Replace(*replaceFrom, *replaceTo);
+	UE_LOG(CommonLog, Log, TEXT("UMainWidget::ReadSaveFile localPath:%s path:%s"), *localPath, *path);
+
+	FArchive* readFile = IFileManager::Get().CreateFileReader(*path);
+	FString jsonStr;
+	
+	if (nullptr != readFile) 
+	{
+		*readFile << jsonStr;
+		readFile->Close();
+		delete readFile;
+		readFile = nullptr;
+
+		UE_LOG(CommonLog, Log, TEXT("UMainWidget::ReadSaveFile jsonStr:%s"), *jsonStr);
+
+		TSharedPtr<FJsonObject> jsonParsed;
+		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(jsonStr);
+
+		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+		{
+			TSharedPtr<FJsonObject> savingObject = jsonParsed->GetObjectField(TEXT("Saving"));
+
+			if (savingObject.IsValid())
+			{
+				FString playerId = savingObject->GetStringField(TEXT("playerId:"));
+				uint32 score = savingObject->GetIntegerField(TEXT("Score:"));
+
+				if (0 == PlayerProfile.profileId.Compare(playerId))
+				{
+					Score1P = score;
+					IsLoadCloudSucceed = true;
+				}
+			}
+		}
+	} else
+	{
+		FString path = FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir());
+		UE_LOG(CommonLog, Log, TEXT("UMainWidget::Ruyi_StartSave path:%s !!!"), *path);
+		FString fileName = TEXT("Saving1.sav");
+		path += fileName;
+
+		FArchive* readFile = IFileManager::Get().CreateFileReader(*path);
+		FString jsonStr;
+
+		if (readFile != nullptr) 
+		{
+			*readFile << jsonStr;
+			readFile->Close();
+			delete readFile;
+			readFile = nullptr;
+
+			UE_LOG(CommonLog, Log, TEXT("UMainWidget::ReadSaveFile jsonStr:%s"), *jsonStr);
+
+			TSharedPtr<FJsonObject> jsonParsed;
+			TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(jsonStr);
+
+			if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+			{
+				TSharedPtr<FJsonObject> savingObject = jsonParsed->GetObjectField(TEXT("Saving"));
+
+				if (savingObject.IsValid())
+				{
+					FString playerId = savingObject->GetStringField(TEXT("playerId:"));
+					uint32 score = savingObject->GetIntegerField(TEXT("Score:"));
+
+					if (0 == PlayerProfile.profileId.Compare(playerId))
+					{
+						Score1P = score;
+						IsLoadLocalSucceed = true;
+					}
+				}
+			}
+		}
+	}
+	
+}
 
 

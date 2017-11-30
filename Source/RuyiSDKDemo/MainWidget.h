@@ -99,6 +99,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MainWidget")
 	UTexture2D* LoadTexture2D_FromFile(const FString& filePath, bool& isValid, int& width, int& height);
 
+	UFUNCTION(BlueprintCallable, Category = "MainWidget")
+	void ReadSaveFile(FString localPath);
 public:
 
 	//RuyiSDK event
@@ -130,6 +132,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
 	bool IsSaveSucceed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
+	bool IsLoadCloudSucceed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
+	bool IsLoadLocalSucceed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
+	FString SavePath;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
 	bool IsRequestFinish;

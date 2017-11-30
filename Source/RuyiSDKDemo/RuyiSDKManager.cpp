@@ -131,7 +131,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLogin(FString& username, FString& password)
 
 		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
 		{
-			int status = jsonParsed->GetIntegerField("status");
+			int status = jsonParsed->GetIntegerField(TEXT("status"));
 
 			if (JSON_RESPONSE_OK == status)
 			{
@@ -143,9 +143,22 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLogin(FString& username, FString& password)
 
 				TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
 
-				MainWidget->PlayerProfile.profileName = dataJsonObject->GetStringField("playerName");
-				MainWidget->PlayerProfile.email = dataJsonObject->GetStringField("emailAddress");
-				MainWidget->PlayerProfile.profileId = dataJsonObject->GetStringField("id");
+				FString playerName("");
+				FString emailAddress("");
+				FString id("");
+
+				if (dataJsonObject->TryGetStringField(TEXT("playerName"), playerName)) 
+				{
+					MainWidget->PlayerProfile.profileName = playerName;
+				}
+				if (dataJsonObject->TryGetStringField(TEXT("emailAddress"), emailAddress)) 
+				{
+					MainWidget->PlayerProfile.email = emailAddress;
+				}
+				if (dataJsonObject->TryGetStringField(TEXT("id"), id)) 
+				{
+					MainWidget->PlayerProfile.profileId = id;
+				}
 				
 				FString pictureUrl("");
 				if (dataJsonObject->TryGetStringField("pictureUrl", pictureUrl)) 
@@ -373,7 +386,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score)
 	jsonWriter->Close();
 
 	FString path = FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir());
-	UE_LOG(CommonLog, Log, TEXT("UMainWidget::Ruyi_StartSave path%s !!!"), *path);
+	UE_LOG(CommonLog, Log, TEXT("UMainWidget::Ruyi_StartSave path:%s !!!"), *path);
 	FString fileName = TEXT("Saving1.sav");
 	path += fileName;
 
@@ -382,7 +395,9 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score)
 	if (!saveFile) return;
 
 	*saveFile << jsonStr;
+	saveFile->Close();
 	delete saveFile;
+	saveFile = nullptr;
 
 	try 
 	{
@@ -455,7 +470,10 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile)
 					FString localPath;
 					if (dataObject->TryGetStringField(TEXT("localPath"), localPath)) 
 					{
-						ReadSaveFile(localPath);
+						//ReadSaveFile(localPath);
+						m_mutex.Lock();
+						MainWidget->SavePath = localPath;
+						m_mutex.Unlock();
 					}
 				}
 			}
@@ -480,7 +498,7 @@ void FRuyiSDKManager::ParseFriendListData(FString& jsonData, FString nameField)
 
 	if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
 	{
-		int status = jsonParsed->GetIntegerField("status");
+		int status = jsonParsed->GetIntegerField(TEXT("status"));
 
 		if (JSON_RESPONSE_OK == status)
 		{
@@ -488,8 +506,8 @@ void FRuyiSDKManager::ParseFriendListData(FString& jsonData, FString nameField)
 			MainWidget->Friends.Empty();
 			m_mutex.Unlock();
 
-			TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
-			TArray<TSharedPtr<FJsonValue>> friendArray = dataJsonObject->GetArrayField("friends");
+			TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField(TEXT("data"));
+			TArray<TSharedPtr<FJsonValue>> friendArray = dataJsonObject->GetArrayField(TEXT("friends"));
 			for (int i = 0; i < friendArray.Num(); ++i)
 			{
 				FRuyiNetProfile friendProfile;
@@ -498,7 +516,7 @@ void FRuyiSDKManager::ParseFriendListData(FString& jsonData, FString nameField)
 				FString pictureUrl("");
 				FString playerId("");
 
-				if (friendArray[i]->AsObject()->TryGetStringField("playerId", playerId))
+				if (friendArray[i]->AsObject()->TryGetStringField(TEXT("playerId"), playerId))
 				{
 					friendProfile.profileId = playerId;
 				}
@@ -525,6 +543,9 @@ void FRuyiSDKManager::ReadSaveFile(FString& localPath)
 
 	FString jsonStr;
 	*readFile << jsonStr;
+	readFile->Close();
+	delete readFile;
+	readFile = nullptr;
 
 	UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::ReadSaveFile jsonStr:%s"), *jsonStr);
 
@@ -533,7 +554,7 @@ void FRuyiSDKManager::ReadSaveFile(FString& localPath)
 
 	if (FJsonSerializer::Deserialize(jsonReader, jsonParsed)) 
 	{
-		TSharedPtr<FJsonObject> savingObject = jsonParsed->GetObjectField("Saving");
+		TSharedPtr<FJsonObject> savingObject = jsonParsed->GetObjectField(TEXT("Saving"));
 
 		if (savingObject.IsValid()) 
 		{
@@ -544,6 +565,7 @@ void FRuyiSDKManager::ReadSaveFile(FString& localPath)
 			{			
 				m_mutex.Lock();
 				MainWidget->Score1P = score;
+				MainWidget->IsLoadCloudSucceed = true;
 				m_mutex.Unlock();	
 			}
 		}
