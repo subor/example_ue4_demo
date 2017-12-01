@@ -61,9 +61,9 @@ void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
 	{
 		//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler %s !!!"), *fTopic);
 
-		auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputDeviceStateChanged*>(msg);
+		//auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputDeviceStateChanged*>(msg);
 		//auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputActionTriggered*>(msg);
-		if (idsc == NULL) return;
+		//if (idsc == NULL) return;
 		/*
 		bool header : 1;
 		bool x360 : 1;

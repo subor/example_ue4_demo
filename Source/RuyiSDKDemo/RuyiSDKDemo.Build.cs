@@ -13,12 +13,12 @@ public class RuyiSDKDemo : ModuleRules
     private string LibPath
     {
         get { return Path.GetFullPath(Path.Combine(ModulePath, "lib/")); }
-    }
+    } 
 
     public RuyiSDKDemo(ReadOnlyTargetRules Target) : base(Target)
 	{
-        bUseRTTI = true;
-        bEnableExceptions = true;
+        //bUseRTTI = true;
+        //bEnableExceptions = true;
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
