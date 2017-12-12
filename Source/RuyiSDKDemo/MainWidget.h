@@ -54,8 +54,28 @@ struct FRuyiNetProfile
 	FRuyiSummaryFriendData summaryFriendData;
 };
 
-#define JSON_RESPONSE_OK 200
+USTRUCT(Blueprintable)
+struct FRuyiSystemSettingData 
+{
+	GENERATED_USTRUCT_BODY();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int AudioVolumn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int SpeakerVolumn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool Mute;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Language;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool DevModeOn;
+};
+
+#define JSON_RESPONSE_OK 200
 
 /**
  * 
@@ -92,6 +112,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|AsyncMatch")
 	void Ruyi_StartLoad();
+
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|SystemSetting")
+	void Ruyi_StartSystemSetting1(FRuyiSystemSettingData settingData);
+
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|StorageLayer")
+	void Ruyi_StartUploadFileToStorageLayer();
 
 	UFUNCTION(BlueprintCallable, Category = "MainWidget")
 	void OpenFileDialog(FString& filePath);
@@ -144,4 +170,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
 	bool IsRequestFinish;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuyiSDK|Data")
+	FRuyiSystemSettingData SettingData;
 };

@@ -20,6 +20,7 @@ FRuyiSDKManager::FRuyiSDKManager()
 	InitRuyiSDK();
 
 	m_SaveCloudFileName = TEXT("unrealRuyiSDKDemo1.sav");
+	IsSDKReady = false;
 }
 
 void FRuyiSDKManager::InitRuyiSDK() 
@@ -29,11 +30,13 @@ void FRuyiSDKManager::InitRuyiSDK()
 	{
 		auto context = new Ruyi::RuyiSDKContext(Ruyi::RuyiSDKContext::Endpoint::PC, "localhost");
 		m_RuyiSDK = Ruyi::RuyiSDK::CreateSDKInstance(*context);
+		IsSDKReady = true;
 
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Success !!!"));
 	}
 	catch (exception e)
 	{
+		IsSDKReady = false;
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Fail !!!"));
 	}
 }
@@ -94,6 +97,21 @@ void FRuyiSDKManager::StartRuyiSDKSave(FString id, int Score, RuyiSDKRequestType
 void FRuyiSDKManager::StartRuyiSDKLoad(FRuyiNetProfile* profile, RuyiSDKRequestType requestType)
 {
 	m_Profile = profile;
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+//void StartRuyiSDKSettingSys_SimulateLoginAndChangeSettings(RuyiSDKRequestType requestType) {}
+
+void FRuyiSDKManager::StartRuyiSDKSettingSystem(FRuyiSystemSettingData* settingData, RuyiSDKRequestType requestType)
+{
+	m_SettingData = settingData;
+	m_RuyiSDKRequestType = requestType;
+	StartThread();
+}
+
+void FRuyiSDKManager::StartRuyiSDKUploadFileToStorageLayer(RuyiSDKRequestType requestType)
+{
 	m_RuyiSDKRequestType = requestType;
 	StartThread();
 }
@@ -488,6 +506,103 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile)
 	EndThread();
 }
 
+void FRuyiSDKManager::Ruyi_AsyncSDKSettingSys_SimulateLoginAndChangeSettings()
+{
+	try 
+	{
+		std::vector<Ruyi::SDK::SettingSystem::Api::SettingItem> vecSetting;
+		m_RuyiSDK->SettingSys->GetSettingItems(vecSetting, "ActionMapping", true);
+
+		for (std::vector<Ruyi::SDK::SettingSystem::Api::SettingItem>::iterator it = vecSetting.begin(); it != vecSetting.end(); ++it) 
+		{
+			
+		}
+	}catch(exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSettingSys_SimulateLoginAndChangeSettings exception !!!"));
+	}
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKSettingSystem(FRuyiSystemSettingData* settingData)
+{
+	std::map<string, string> kvs;
+	kvs["AudioVolumn"] = to_string(settingData->AudioVolumn);
+	kvs["SpeakerVolume"] = to_string(settingData->SpeakerVolumn);
+	if (settingData->Mute) 
+	{
+		kvs["Mute"] = "true";
+	} else 
+	{
+		kvs["Mute"] = "false";
+	}
+
+	try 
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSettingSys_SetVolume"));
+
+		//int count = m_RuyiSDK->SettingSys->SetSettingItems(kvs);
+		
+		//UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSettingSys_SetVolume count:%d"), count);
+
+		Ruyi::SDK::StorageLayer::GetLocalPathResult result;
+		m_RuyiSDK->Storage->GetLocalPath(result, "/<HDD0>/n.txt");
+
+		FString fPath = UTF8_TO_TCHAR(result.path.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSettingSys_SetVolume result:%d path:%s"), result.result, *fPath);
+
+	}catch (exception e) 
+	{
+		UE_LOG(CommonLog, Log, TEXT("exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKUploadFileToStorageLayer()
+{
+	try 
+	{
+		Ruyi::SDK::StorageLayer::GetLocalPathResult result;
+		m_RuyiSDK->Storage->GetLocalPath(result, "/<HDD0>/godenTest.json");
+
+		FString fPath = UTF8_TO_TCHAR(result.path.c_str());
+
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKUploadFileToStorageLayer result:%d path:%s"), result.result, *fPath);
+
+		FString jsonStr;
+		TSharedRef<TJsonWriter<TCHAR>> jsonWriter = TJsonWriterFactory<>::Create(&jsonStr);
+
+		jsonWriter->WriteObjectStart();
+
+		jsonWriter->WriteObjectStart("Test");
+		jsonWriter->WriteValue("AAA:", 0);
+		jsonWriter->WriteObjectEnd();
+
+		jsonWriter->WriteObjectEnd();
+
+		jsonWriter->Close();
+
+		FArchive* saveFile = IFileManager::Get().CreateFileWriter(*fPath);
+		if (!saveFile) return;
+
+		*saveFile << jsonStr;
+		saveFile->Close();
+		delete saveFile;
+		saveFile = nullptr;
+
+	} catch (exception e) 
+	{
+		UE_LOG(CommonLog, Log, TEXT("exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
 #pragma endregion
 
 #pragma region data handle
@@ -617,6 +732,12 @@ uint32 FRuyiSDKManager::Run()
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestGameLoad:
 				Ruyi_AsyncSDKLoad(m_Profile);
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestSettingSys_SetSetting:
+				Ruyi_AsyncSDKSettingSystem(m_SettingData);
+				break;
+			case RuyiSDKRequestType::RuyiSDKRequestUploadFileToStorageLayer:
+				Ruyi_AsyncSDKUploadFileToStorageLayer();
 				break;
 			default:
 				break;

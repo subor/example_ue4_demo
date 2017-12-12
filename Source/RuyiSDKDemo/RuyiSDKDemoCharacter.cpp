@@ -49,35 +49,61 @@ ARuyiSDKDemoCharacter::ARuyiSDKDemoCharacter()
 	IsPaused = false;
 }
 
-int TimeCounter = 0;
+void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg);
+std::string& replace_all(std::string& str, const std::string& old_value, const std::string& new_value);
+void ARuyiSDKDemoCharacter::BeginPlay()
+{
+	Super::BeginPlay();
 
+	UE_LOG(CommonLog, Log, TEXT("ARuyiSDKDemoCharacter::BeginPlay()"));
+
+	FRuyiSDKManager::Instance();
+	
+	const string* pChar = &Ruyi::SDK::Constants::g_ConstantsSDKDataTypes_constants.layer0_publisher_out_uri;
+	string* modifier = const_cast<string*>(pChar);
+	replace_all(*modifier, "{addr}", "localhost");
+
+	//void(*aaa)(string, TBase*);
+	//MessageHandler handler;
+	//handler = (MessageHandler)(&ARuyiSDKDemoCharacter::InputStateChangeHandler);
+	//handler =  reinterpret_cast<MessageHandler>( &ARuyiSDKDemoCharacter::InputStateChangeHandler);
+	if (FRuyiSDKManager::Instance()->IsSDKReady)
+	{
+		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmanager");
+		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(InputStateChangeHandler);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Input
+int TimeCounter = 0;
+float horizontalAxis = 0;
+float verticalAxis = 0;
 void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
 {
 	FString fTopic = FString(topic.c_str());
 
-	TimeCounter++;
+	if (nullptr == GEngine) return;
+	GEngine->GetWorld();
+	//TimeCounter++;
 
-	if (TimeCounter > 200)
+	//if (TimeCounter > 200)
 	{
-		//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler %s !!!"), *fTopic);
-
 		//auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputDeviceStateChanged*>(msg);
 		//auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputActionTriggered*>(msg);
+		Ruyi::SDK::InputManager::InputActionTriggered* idsc = (Ruyi::SDK::InputManager::InputActionTriggered*)(msg);
+		//Ruyi::SDK::InputManager::InputActionTriggered* idsc = Cast<Ruyi::SDK::InputManager::InputActionTriggered>(msg);
+
 		//if (idsc == NULL) return;
-		/*
-		bool header : 1;
-		bool x360 : 1;
-		bool dgamepad : 1;
-		bool djoystick : 1;
-		bool dkeyboard : 1;
-		bool dmouse : 1;
-		bool ruyicontroller : 1;
-		*/
+		
 		//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler __isset header:%d, x360:%d, dgamepad:%d, djoystick:%d, dkeyboard:%d, dmouse:%d, ruyicontroller:%d !!!"), idsc->__isset.header, idsc->__isset.x360, idsc->__isset.dgamepad, idsc->__isset.djoystick, idsc->__isset.dkeyboard, idsc->__isset.dmouse, idsc->__isset.ruyicontroller);
+		
+		FString deviceId = UTF8_TO_TCHAR(idsc->deviceId.c_str());
+		FString name = UTF8_TO_TCHAR(idsc->name.c_str());
 
-		//idsc->__isset
+		UE_LOG(CommonLog, Log, TEXT("InputActionTriggered deviceId:%s name:%s"), *deviceId, *name);
 
-		TimeCounter = 0;
+		//TimeCounter = 0;
 	}
 }
 
@@ -97,26 +123,6 @@ std::string& replace_all(std::string& str, const std::string& old_value, const s
 	}
 	return str;
 }
-
-void ARuyiSDKDemoCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	UE_LOG(CommonLog, Log, TEXT("ARuyiSDKDemoCharacter::BeginPlay()"));
-
-	FRuyiSDKManager::Instance();
-	/*
-	const string* pChar = &Ruyi::SDK::Constants::g_ConstantsSDKDataTypes_constants.layer0_publisher_out_uri;
-	string* modifier = const_cast<string*>(pChar);
-	replace_all(*modifier, "{addr}", "localhost");
-
-	FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmanager");
-	FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(InputStateChangeHandler);*/
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// Input
 
 void ARuyiSDKDemoCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -143,7 +149,6 @@ void ARuyiSDKDemoCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 	// VR headset functionalit
 	//PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ARuyiSDKDemoCharacter::OnResetVR);
 }
-
 
 void ARuyiSDKDemoCharacter::OnResetVR()
 {

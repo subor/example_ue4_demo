@@ -3,7 +3,6 @@
 #include "MainWidget.h"
 #include "RuyiSDKDemo.h"
 #include "RuyiSDKDemoGameMode.h"
-//#include "RuyiSDKDemoCharacter.h"
 
 #include "AllowWindowsPlatformTypes.h"
 #include "Windows/WindowsPlatformProcess.h"
@@ -32,7 +31,14 @@ public:
 	void StartRuyiSDKSave(FString id, int Score, RuyiSDKRequestType requestType);
 	void StartRuyiSDKLoad(struct FRuyiNetProfile* profile, RuyiSDKRequestType requestType);
 
+	//void StartRuyiSDKSettingSys_SimulateLoginAndChangeSettings(RuyiSDKRequestType requestType);
+	void StartRuyiSDKSettingSystem(struct FRuyiSystemSettingData* settingData, RuyiSDKRequestType requestType);
+
+	void StartRuyiSDKUploadFileToStorageLayer(RuyiSDKRequestType requestType);
+
 	RuyiSDKRequestType m_RuyiSDKRequestType;
+
+	bool IsSDKReady;
 
 	//multi-thread
 	virtual bool Init() override;
@@ -62,6 +68,8 @@ private:
 	FString m_SaveCloudFileName;
 	void ReadSaveFile(FString& localPath);
 
+	FRuyiSystemSettingData* m_SettingData;
+
 	//async request
 	void Ruyi_AsyncSDKLogin(FString& username, FString& password);
 	void Ruyi_AsyncSDKLoginOut();
@@ -71,6 +79,11 @@ private:
 	void Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendsIds);
 	void Ruyi_AsyncSDKSave(FString playerId, int score);
 	void Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile);
+
+	void Ruyi_AsyncSDKSettingSys_SimulateLoginAndChangeSettings();
+	void Ruyi_AsyncSDKSettingSystem(FRuyiSystemSettingData* settingData);
+	
+	void Ruyi_AsyncSDKUploadFileToStorageLayer();
 
 	//multi-thread
 	void StartThread();

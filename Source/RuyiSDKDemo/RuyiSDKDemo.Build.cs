@@ -18,7 +18,7 @@ public class RuyiSDKDemo : ModuleRules
     public RuyiSDKDemo(ReadOnlyTargetRules Target) : base(Target)
 	{
         //bUseRTTI = true;
-        //bEnableExceptions = true;
+        bEnableExceptions = true;
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -32,7 +32,7 @@ public class RuyiSDKDemo : ModuleRules
                     "InputCore",
                     "HeadMountedDisplay",
                     "Json",
-                    "DesktopPlatform",
+                    //"DesktopPlatform",
                     "ImageWrapper",
                     "RHI",
                     "RenderCore",
@@ -62,5 +62,12 @@ public class RuyiSDKDemo : ModuleRules
         PublicAdditionalLibraries.Add(Path.Combine(LibPath, "boost", "libboost_system-vc141-mt-gd-1_64.lib"));
         PublicAdditionalLibraries.Add(Path.Combine(LibPath, "boost", "libboost_thread-vc141-mt-1_64.lib"));
         PublicAdditionalLibraries.Add(Path.Combine(LibPath, "boost", "libboost_thread-vc141-mt-gd-1_64.lib"));
+
+        PrivateIncludePathModuleNames.AddRange(
+            new string[] 
+            {
+                "DesktopPlatform",
+            }
+            );
     }
 }

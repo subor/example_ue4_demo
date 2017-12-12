@@ -18,6 +18,9 @@ enum class RuyiSDKRequestType : uint8
 	RuyiSDKRequestTypeMatchMaking,
 	RuyiSDKRequestGameSave,
 	RuyiSDKRequestGameLoad,
+	RuyiSDKRequestSettingSys_SimulateLoginAndChangeSettings,
+	RuyiSDKRequestSettingSys_SetSetting,
+	RuyiSDKRequestUploadFileToStorageLayer,
 };
 
 
@@ -28,6 +31,7 @@ class ARuyiSDKDemoGameMode : public AGameModeBase
 
 public:
 	ARuyiSDKDemoGameMode();
+
 };
 
 

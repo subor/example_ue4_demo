@@ -13,6 +13,11 @@ void UMainWidget::InitSDK()
 	FRuyiSDKManager::Instance()->MainWidget = this;
 	IsRequestFinish = false;
 	IsLogin = false;
+	SettingData.AudioVolumn = 10;
+	SettingData.SpeakerVolumn = 10;
+	SettingData.DevModeOn = false;
+	SettingData.Language = TEXT("en-US");
+	SettingData.Mute = false;
 }
 
 #pragma region friend
@@ -77,6 +82,21 @@ void UMainWidget::Ruyi_StartLoad()
 	IsLoadLocalSucceed = false;
 	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestGameLoad;
 	FRuyiSDKManager::Instance()->StartRuyiSDKLoad(&PlayerProfile, SDKRequestType);
+}
+
+void UMainWidget::Ruyi_StartSystemSetting1(FRuyiSystemSettingData settingData)
+{
+	IsRequestFinish = false;
+	SettingData = settingData;
+	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestSettingSys_SetSetting;
+	FRuyiSDKManager::Instance()->StartRuyiSDKSettingSystem(&SettingData, SDKRequestType);
+}
+
+void UMainWidget::Ruyi_StartUploadFileToStorageLayer() 
+{
+	IsRequestFinish = false;
+	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestUploadFileToStorageLayer;
+	FRuyiSDKManager::Instance()->StartRuyiSDKUploadFileToStorageLayer(SDKRequestType);
 }
 
 #pragma endregion
