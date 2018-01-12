@@ -1,0 +1,27 @@
+{
+	appID: "com.ruyi.jade.RuyiSDKDemo",
+	application:	{
+		name:"@com.ruyi.RuyiSDKDemo",
+		label:"@antestapp",
+		icon:"bluetooth.png",
+		description:"an test app description",
+		logo:"logo.png",
+		activity:[
+			{
+				name:"main",
+				exePath:"RuyiSDKDemo/RuyiSDKDemo.exe",
+				label:"main test activity",
+				description:"@antestapp",
+				icon:"logo.png"
+			}
+		]
+	},
+	use_permissions:[
+		{
+			name:"jade.permission.ACHIEVEMENT"
+		}
+	],
+	use_sdk:{
+		minSdkVersion : "1.0.0.0"
+	}
+}

@@ -1,0 +1,13 @@
+{
+  "i18n": {
+    "en-US": {
+      "trc.item.succeed": "pass",
+      "antestapp": "achievement max number allowed for each title",
+      "com.ruyi.TestApp": "against every game, we only allow specific number of achievement to be created"
+    },
+    "zh-CN": {
+      "trc.item.succeed": "测试通过",
+      "antestapp": "每款APP所允许的最大的成就数量"
+    }
+  }
+}
