@@ -21,6 +21,13 @@ void UMainWidget::InitSDK()
 }
 
 #pragma region friend
+void UMainWidget::Ruyi_StartRegister(FString username, FString password)
+{
+	IsRequestFinish = false;
+	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestTypeRegister;
+	FRuyiSDKManager::Instance()->StartRuyiSDKRegister(username, password, SDKRequestType);
+}
+
 void UMainWidget::Ruyi_StartLogin(FString username, FString password) 
 {
 	UE_LOG(CommonLog, Log, TEXT("UMainWidget::Ruyi_StartLogin username:%s password:%s !!!"), *username, *password);
@@ -67,6 +74,13 @@ void UMainWidget::Ruyi_StartMatchMakingFindPlayers(int rangeDelta, int numMatche
 	FRuyiSDKManager::Instance()->StartRuyiSDKMatchMakingFindPlayers(rangeDelta, numMatches, SDKRequestType);
 }
 
+void UMainWidget::Ruyi_StartGetLeaderboard()
+{
+	IsRequestFinish = false;
+	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestGetLeaderboard;
+	FRuyiSDKManager::Instance()->StartRuyiSDKLeaderboard(SDKRequestType);
+}
+
 void UMainWidget::Ruyi_StartSave(int score) 
 {
 	IsRequestFinish = false;
@@ -97,6 +111,13 @@ void UMainWidget::Ruyi_StartUploadFileToStorageLayer()
 	IsRequestFinish = false;
 	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestUploadFileToStorageLayer;
 	FRuyiSDKManager::Instance()->StartRuyiSDKUploadFileToStorageLayer(SDKRequestType);
+}
+
+void UMainWidget::Ruyi_StartGetPlayerProfile()
+{
+	IsRequestFinish = false;
+	SDKRequestType = RuyiSDKRequestType::RuyiSDKRequestGetProfile;
+	FRuyiSDKManager::Instance()->StartRuyiSDKGetProfile(SDKRequestType);
 }
 
 #pragma endregion

@@ -10,6 +10,7 @@ UENUM(BlueprintType)
 enum class RuyiSDKRequestType : uint8
 {
 	RuyiSDKRequestTypeNone = 0,
+	RuyiSDKRequestTypeRegister,
 	RuyiSDKRequestTypeLogin,
 	RuyiSDKRequestTypeLoginOut,
 	RuyiSDKRequestTypeFriendList,
@@ -21,6 +22,8 @@ enum class RuyiSDKRequestType : uint8
 	RuyiSDKRequestSettingSys_SimulateLoginAndChangeSettings,
 	RuyiSDKRequestSettingSys_SetSetting,
 	RuyiSDKRequestUploadFileToStorageLayer,
+	RuyiSDKRequestGetLeaderboard,
+	RuyiSDKRequestGetProfile,
 };
 
 

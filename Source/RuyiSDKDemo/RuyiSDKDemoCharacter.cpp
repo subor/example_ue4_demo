@@ -49,8 +49,8 @@ ARuyiSDKDemoCharacter::ARuyiSDKDemoCharacter()
 	IsPaused = false;
 }
 
-void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg);
 std::string& replace_all(std::string& str, const std::string& old_value, const std::string& new_value);
+
 void ARuyiSDKDemoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -63,19 +63,40 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 	string* modifier = const_cast<string*>(pChar);
 	replace_all(*modifier, "{addr}", "localhost");
 
-	//void(*aaa)(string, TBase*);
-	//MessageHandler handler;
-	//handler = (MessageHandler)(&ARuyiSDKDemoCharacter::InputStateChangeHandler);
-	//handler =  reinterpret_cast<MessageHandler>( &ARuyiSDKDemoCharacter::InputStateChangeHandler);
+	
 	if (FRuyiSDKManager::Instance()->IsSDKReady)
 	{
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmanager");
-		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(InputStateChangeHandler);
+		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler);
 	}
+
+	PrimaryActorTick.bCanEverTick = true;
+}
+
+void ARuyiSDKDemoCharacter::Tick(float DeltaSeconds) 
+{
+	Super::Tick(DeltaSeconds);
+}
+
+void ARuyiSDKDemoCharacter::Ruyi_StartTest()
+{
+	/*
+	FRuyiSDKManager::Instance()->SDK()->RuyiNet->Initialise(ToRuyiString("11499"), ToRuyiString("hunter2"), []()
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK RuyiNet OnInitialized !!!"));
+	});*/
+
+	//FRuyiSDKManager::Instance()->SDK()->RuyiNet->Initialise(ToRuyiString("11499"), ToRuyiString("hunter2"), NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////
+void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
+{
+	//UE_LOG(CommonLog, Log, TEXT("ARuyiSDKDemoCharacter::InputStateChangeHandler !!!"));
+}
+
 // Input
+/*
 int TimeCounter = 0;
 float horizontalAxis = 0;
 float verticalAxis = 0;
@@ -90,8 +111,8 @@ void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
 	//if (TimeCounter > 200)
 	{
 		//auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputDeviceStateChanged*>(msg);
-		//auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputActionTriggered*>(msg);
-		Ruyi::SDK::InputManager::InputActionTriggered* idsc = (Ruyi::SDK::InputManager::InputActionTriggered*)(msg);
+		auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputActionTriggered*>(msg);
+		//Ruyi::SDK::InputManager::InputActionTriggered* idsc = (Ruyi::SDK::InputManager::InputActionTriggered*)(msg);
 		//Ruyi::SDK::InputManager::InputActionTriggered* idsc = Cast<Ruyi::SDK::InputManager::InputActionTriggered>(msg);
 
 		//if (idsc == NULL) return;
@@ -106,7 +127,7 @@ void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
 		//TimeCounter = 0;
 	}
 }
-
+*/
 std::string& replace_all(std::string& str, const std::string& old_value, const std::string& new_value)
 {
 	while (true)

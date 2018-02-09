@@ -17,10 +17,12 @@ public class RuyiSDKDemo : ModuleRules
 
     public RuyiSDKDemo(ReadOnlyTargetRules Target) : base(Target)
 	{
-        //bUseRTTI = true;
+        bUseRTTI = true;
         bEnableExceptions = true;
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        Definitions.Add("BOOST_ALL_NO_LIB");
 
 		PublicDependencyModuleNames.AddRange
             (
@@ -44,6 +46,7 @@ public class RuyiSDKDemo : ModuleRules
             new string[] {
 
                 "RuyiSDKDemo/include",
+                "RuyiSDKDemo/include/Generated/CommonType",
                 //"RuyiSDKDemo/Public",
 				// ... add public include paths required here ...
 			}

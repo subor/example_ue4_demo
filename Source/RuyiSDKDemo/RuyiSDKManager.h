@@ -13,6 +13,10 @@
 
 #include "RuyiSDK.h"
 
+//tempory
+#define APPID "11499"
+#define GAMEID "Shooter"
+
 class FRuyiSDKManager : public FRunnable
 {
 public:
@@ -22,6 +26,7 @@ public:
 	class UMainWidget* MainWidget;
 
 public:
+	void StartRuyiSDKRegister(FString& username, FString& password, RuyiSDKRequestType requestType);
 	void StartRuyiSDKLogin(FString& username, FString& password, RuyiSDKRequestType requestType);
 	void StartRuyiSDKLoginout(RuyiSDKRequestType requestType);
 	void StartRuyiSDKFriendList(RuyiSDKRequestType requestType);
@@ -30,11 +35,11 @@ public:
 	void StartRuyiSDKRemoveFriends(TArray<FString>& profileIds, RuyiSDKRequestType requestType);
 	void StartRuyiSDKSave(FString id, int Score, RuyiSDKRequestType requestType);
 	void StartRuyiSDKLoad(struct FRuyiNetProfile* profile, RuyiSDKRequestType requestType);
-
-	//void StartRuyiSDKSettingSys_SimulateLoginAndChangeSettings(RuyiSDKRequestType requestType);
 	void StartRuyiSDKSettingSystem(struct FRuyiSystemSettingData* settingData, RuyiSDKRequestType requestType);
-
 	void StartRuyiSDKUploadFileToStorageLayer(RuyiSDKRequestType requestType);
+	void StartRuyiSDKLeaderboard(RuyiSDKRequestType requestType);
+	//when user logged in main client, you can get his profile 
+	void StartRuyiSDKGetProfile(RuyiSDKRequestType requestType);
 
 	RuyiSDKRequestType m_RuyiSDKRequestType;
 
@@ -71,6 +76,7 @@ private:
 	FRuyiSystemSettingData* m_SettingData;
 
 	//async request
+	void Ruyi_AsyncSDKRegister(FString& username, FString& password);
 	void Ruyi_AsyncSDKLogin(FString& username, FString& password);
 	void Ruyi_AsyncSDKLoginOut();
 	void Ruyi_AsyncSDKFriendList();
@@ -79,11 +85,12 @@ private:
 	void Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendsIds);
 	void Ruyi_AsyncSDKSave(FString playerId, int score);
 	void Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile);
-
 	void Ruyi_AsyncSDKSettingSys_SimulateLoginAndChangeSettings();
 	void Ruyi_AsyncSDKSettingSystem(FRuyiSystemSettingData* settingData);
-	
 	void Ruyi_AsyncSDKUploadFileToStorageLayer();
+
+	void Ruyi_AyncSDKLeaderboard();
+	void Ruyi_AsyncSDKGetProfile();
 
 	//multi-thread
 	void StartThread();

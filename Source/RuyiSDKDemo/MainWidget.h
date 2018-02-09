@@ -90,6 +90,9 @@ public:
 	void InitSDK();
 
 	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|Authentication")
+	void Ruyi_StartRegister(FString username, FString password);
+
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|Authentication")
 	void Ruyi_StartLogin(FString username, FString password);
 
 	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|Authentication")
@@ -118,6 +121,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|StorageLayer")
 	void Ruyi_StartUploadFileToStorageLayer();
+
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|RuyiNet")
+	void Ruyi_StartGetLeaderboard();
+
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Request|RuyiNet")
+	void Ruyi_StartGetPlayerProfile();
 
 	UFUNCTION(BlueprintCallable, Category = "MainWidget")
 	void OpenFileDialog(FString& filePath);

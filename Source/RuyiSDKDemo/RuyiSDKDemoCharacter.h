@@ -32,6 +32,11 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
+	UFUNCTION(BlueprintCallable, Category = "RuyiSDK|Test")
+	void Ruyi_StartTest();
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;
@@ -90,7 +95,6 @@ public:
 	int m_Score;
 
 private:
-	//void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg);
-	
+	void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg);
 };
 
