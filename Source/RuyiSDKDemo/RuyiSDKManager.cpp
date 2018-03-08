@@ -607,13 +607,14 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSettingSys_SimulateLoginAndChangeSettings()
 {
 	try 
 	{
+		/*
 		std::vector<Ruyi::SDK::SettingSystem::Api::SettingItem> vecSetting;
 		m_RuyiSDK->SettingSys->GetSettingItems(vecSetting, "ActionMapping", true);
 
 		for (std::vector<Ruyi::SDK::SettingSystem::Api::SettingItem>::iterator it = vecSetting.begin(); it != vecSetting.end(); ++it) 
 		{
 			
-		}
+		}*/
 	}catch(exception e)
 	{
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSettingSys_SimulateLoginAndChangeSettings exception !!!"));
