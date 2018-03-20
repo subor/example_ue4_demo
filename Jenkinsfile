@@ -246,3 +246,14 @@ pipeline {
 		}
 	}
 }
+
+void stage_success(stage){
+	echo "[${stage}] stage successfully completed"
+}
+
+void stage_failed(stage){
+	echo "[${stage}] stage failed"
+	
+	if(env.FAILURE_STAGE==null)
+		env.FAILURE_STAGE = stage
+}
