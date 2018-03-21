@@ -121,7 +121,7 @@ pipeline {
 				//1.Generate VS project file
 				bat """
 					chcp ${WIN_CMD_ENCODING} 
-					START /WAIT "${UE_ROOT}\\Binaries\\DotNET\\UnrealBuildTool.exe" -projectfiles -project="${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.uproject" -CurrentPlatform -2017 -game -rocket -progress
+					START /WAIT "${UE_ROOT}\\Binaries\\DotNET\\UnrealBuildTool.exe" -projectfiles -project="${workspace.replaceAll('/','\\\\')}\\${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.uproject" -CurrentPlatform -2017 -game -rocket -progress
 				"""
 				withEnv(["PATH+NUGET_PACKAGES=${NUGET_PACKAGES}"]){
 					//2.VS Build target - Development & Shipping in Win64 platform
@@ -150,7 +150,7 @@ pipeline {
 					chcp ${WIN_CMD_ENCODING}
 					del ${DEMO_PROJECT_ROOT}\\Pack.zip
 					del {COOKED_ROOT}\\RuyiSDKDemo
-					START /WAIT "${UE_ROOT}\\Build\\BatchFiles\\RunUAT.bat" BuildCookRun -project="${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.uproject" -noP4 -platform=Win64 -clientconfig=Development -serverconfig=Development -cook -maps=AllMaps --NoCompile -stage -pak -archive -archivedirectory="${COOKED_ROOT}"
+					START /WAIT "${UE_ROOT}\\Build\\BatchFiles\\RunUAT.bat" BuildCookRun -project="${workspace.replaceAll('/','\\\\')}\\${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.uproject" -noP4 -platform=Win64 -clientconfig=Development -serverconfig=Development -cook -maps=AllMaps --NoCompile -stage -pak -archive -archivedirectory="${workspace.replaceAll('/','\\\\')}\\${COOKED_ROOT}"
 					ren {COOKED_ROOT}\\WindowsNoEditor RuyiSDKDemo
 					xcopy ${RUYI_SDK_CPP}\\lib\\libzmq.dll ${COOKED_ROOT}\\RuyiSDKDemo\\libzmq.dll
 				"""
