@@ -65,6 +65,7 @@ pipeline {
 									
 					checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches:  scm.branches,
 						 doGenerateSubmoduleConfigurations: false, extensions: [
+							[$class: 'RelativeTargetDirectory', relativeTargetDir: "${DEMO_PROJECT_ROOT}"],
 							[$class: 'CleanBeforeCheckout'],
 							[$class: 'CheckoutOption', timeout: 60],
 							[$class: 'CloneOption', honorRefspec: true, depth: 0, noTags: true, reference: '', shallow: true,timeout: 60]
@@ -85,7 +86,7 @@ pipeline {
 			}
 		}
 		
-		stage('Copy RuyiSDKCpp'){
+		stage('Copy dependencies'){
 			steps{
 				script{
 					def jobName = params.JOB_NAME
