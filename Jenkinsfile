@@ -194,8 +194,10 @@ pipeline {
 			steps{
 				script{
 					bat """
+						pushd ${DEMO_PROJECT_ROOT}
+						git rev-parse HEAD > ${workspace.replaceAll('/','\\\\')}\\${COMMIT_ID_FILE}
+						popd
 						md ${ARCHIVE_ROOT}
-						git rev-parse HEAD > ${COMMIT_ID_FILE}
 						xcopy ${DEMO_PROJECT_ROOT}\\Pack.zip ${ARCHIVE_ROOT} /i /y
 						exit 0
 					"""
