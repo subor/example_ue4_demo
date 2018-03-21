@@ -127,6 +127,7 @@ pipeline {
 					//2.VS Build target - Development & Shipping in Win64 platform
 					bat """
 						chcp ${WIN_CMD_ENCODING}
+						"${tool 'MSBuild'}" "${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.sln" /t:restore;build /m:4 /p:Configuration="Development Editor" /p:Platform="Win64"
 						"${tool 'MSBuild'}" "${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.sln" /t:restore;build /m:4 /p:Configuration=Development /p:Platform="Win64"
 						"${tool 'MSBuild'}" "${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.sln" /t:restore;build /m:4 /p:Configuration=Shipping /p:Platform="Win64"
 					"""
@@ -149,10 +150,15 @@ pipeline {
 				bat """
 					chcp ${WIN_CMD_ENCODING}
 					del ${DEMO_PROJECT_ROOT}\\Pack.zip /F /Q
-					del ${COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo /F /S /Q
 					"${UE_ROOT}/Build/BatchFiles/RunUAT.bat" BuildCookRun -project="${workspace}/${DEMO_PROJECT_ROOT}/RuyiSDKDemo.uproject" -noP4 -platform=Win64 -clientconfig=Development -serverconfig=Development -cook -maps=AllMaps --NoCompile -stage -pak -archive -archivedirectory="${workspace}/${COOKED_ROOT}"
+				"""
+				
+				//Rename & Copy runtime dependencies
+				bat """
+					chcp ${WIN_CMD_ENCODING}
+					rd ${COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo /S /Q
 					ren ${COOKED_ROOT.replaceAll('/','\\\\')}\\WindowsNoEditor RuyiSDKDemo
-					xcopy ${RUYI_SDK_CPP}\\lib\\libzmq.dll ${COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo\\libzmq.dll
+					xcopy ${RUYI_SDK_CPP}\\lib\\zmq\\libzmq.dll ${COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo /i /y
 				"""
 			}
 			
@@ -188,8 +194,9 @@ pipeline {
 			steps{
 				script{
 					bat """
+						md ${ARCHIVE_ROOT}
 						git rev-parse HEAD > ${COMMIT_ID_FILE}
-						xcopy ${DEMO_PROJECT_ROOT}\\Pack.zip ${ARCHIVE_ROOT}\\Pack.zip /s /i /y
+						xcopy ${DEMO_PROJECT_ROOT}\\Pack.zip ${ARCHIVE_ROOT} /i /y
 						exit 0
 					"""
 
