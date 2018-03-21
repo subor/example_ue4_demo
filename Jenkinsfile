@@ -30,7 +30,7 @@ pipeline {
 		//Nuget Packages home
 		NUGET_PACKAGES = "c:/jenkins/packages"
 		//Unreal Engine root
-		UE_ROOT = "C:\\Program Files\\Epic Games\\UE_4.18\\Engine"
+		UE_ROOT = "C:/Program Files/Epic Games/UE_4.18/Engine"
 		//Temp folder
 		TEMP_DIR = 'temp'
 		//Ruyi SDK CPP folder
@@ -42,7 +42,7 @@ pipeline {
 		//DEMO SDK CPP folder
 		DEMO_SDKCPP_ROOT = "${DEMO_PROJECT_ROOT}\\Source"
 		//Unreal packed target
-		COOKED_ROOT = "${DEMO_PROJECT_ROOT}\\Pack"
+		COOKED_ROOT = "${DEMO_PROJECT_ROOT}/Pack"
 		//Archive root
 		ARCHIVE_ROOT = 'archives'
 		//File path for saving commit id
@@ -121,7 +121,7 @@ pipeline {
 				//1.Generate VS project file
 				bat """
 					chcp ${WIN_CMD_ENCODING} 
-					START /WAIT "${UE_ROOT}\\Binaries\\DotNET\\UnrealBuildTool.exe" -projectfiles -project="${workspace.replaceAll('/','\\\\')}\\${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.uproject" -CurrentPlatform -2017 -game -rocket -progress
+					START /WAIT "${UE_ROOT}/Binaries/DotNET/UnrealBuildTool.exe" -projectfiles -project="${workspace}/${DEMO_PROJECT_ROOT}/RuyiSDKDemo.uproject" -CurrentPlatform -2017 -game -rocket -progress
 				"""
 				withEnv(["PATH+NUGET_PACKAGES=${NUGET_PACKAGES}"]){
 					//2.VS Build target - Development & Shipping in Win64 platform
@@ -149,10 +149,10 @@ pipeline {
 				bat """
 					chcp ${WIN_CMD_ENCODING}
 					del ${DEMO_PROJECT_ROOT}\\Pack.zip
-					del {COOKED_ROOT}\\RuyiSDKDemo
-					START /WAIT "${UE_ROOT}\\Build\\BatchFiles\\RunUAT.bat" BuildCookRun -project="${workspace.replaceAll('/','\\\\')}\\${DEMO_PROJECT_ROOT}\\RuyiSDKDemo.uproject" -noP4 -platform=Win64 -clientconfig=Development -serverconfig=Development -cook -maps=AllMaps --NoCompile -stage -pak -archive -archivedirectory="${workspace.replaceAll('/','\\\\')}\\${COOKED_ROOT}"
-					ren {COOKED_ROOT}\\WindowsNoEditor RuyiSDKDemo
-					xcopy ${RUYI_SDK_CPP}\\lib\\libzmq.dll ${COOKED_ROOT}\\RuyiSDKDemo\\libzmq.dll
+					del {COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo
+					START /WAIT "${UE_ROOT}/Build/BatchFiles/RunUAT.bat" BuildCookRun -project="${workspace}/${DEMO_PROJECT_ROOT}/RuyiSDKDemo.uproject" -noP4 -platform=Win64 -clientconfig=Development -serverconfig=Development -cook -maps=AllMaps --NoCompile -stage -pak -archive -archivedirectory="${workspace}/${COOKED_ROOT}"
+					ren {COOKED_ROOT.replaceAll('/','\\\\')}\\WindowsNoEditor RuyiSDKDemo
+					xcopy ${RUYI_SDK_CPP}\\lib\\libzmq.dll ${COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo\\libzmq.dll
 				"""
 			}
 			
