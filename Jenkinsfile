@@ -8,8 +8,8 @@ pipeline {
 	
 	parameters {
 		booleanParam(name: 'CLEAN_BUILD', defaultValue: true, description: 'Options for doing a clean build when is true')
-		string(name: 'REF_BUILD_NUMBER', defaultValue: '', description: 'Specified build number to deploy(E.g.: 22, using latest build when empty)')
-		string(name: 'JOB_NAME', defaultValue: 'RUYI-Platform-CleanBuild', description: 'Specified job name to deploy')
+		string(name: 'REF_BUILD_NUMBER', defaultValue: '', description: 'Specified build number to copy dependencies(E.g.: 22, using latest build when empty)')
+		string(name: 'JOB_NAME', defaultValue: 'RUYI-Platform-CleanBuild', description: 'Specified job name to copy dependencies')
 		booleanParam(name: 'MAIL_ON_FAILED', defaultValue: true, description: 'Options for sending mail when failed')
 	}
 	
@@ -40,7 +40,7 @@ pipeline {
 		//Unreal Demo Root
 		DEMO_PROJECT_ROOT = "unreal_demo"
 		//DEMO SDK CPP folder
-		DEMO_SDKCPP_ROOT = "${DEMO_PROJECT_ROOT}\\Source"
+		DEMO_SDKCPP_ROOT = "${DEMO_PROJECT_ROOT}\\Source\\RuyiSDKDemo"
 		//Unreal packed target
 		COOKED_ROOT = "${DEMO_PROJECT_ROOT}/Pack"
 		//Archive root
@@ -121,7 +121,7 @@ pipeline {
 				//1.Generate VS project file
 				bat """
 					chcp ${WIN_CMD_ENCODING} 
-					START /WAIT "${UE_ROOT}/Binaries/DotNET/UnrealBuildTool.exe" -projectfiles -project="${workspace}/${DEMO_PROJECT_ROOT}/RuyiSDKDemo.uproject" -CurrentPlatform -2017 -game -rocket -progress
+					"${UE_ROOT}/Binaries/DotNET/UnrealBuildTool.exe" -projectfiles -project="${workspace}/${DEMO_PROJECT_ROOT}/RuyiSDKDemo.uproject" -CurrentPlatform -2017 -game -rocket -progress
 				"""
 				withEnv(["PATH+NUGET_PACKAGES=${NUGET_PACKAGES}"]){
 					//2.VS Build target - Development & Shipping in Win64 platform
@@ -148,10 +148,10 @@ pipeline {
 				//Cook
 				bat """
 					chcp ${WIN_CMD_ENCODING}
-					del ${DEMO_PROJECT_ROOT}\\Pack.zip
-					del {COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo
-					START /WAIT "${UE_ROOT}/Build/BatchFiles/RunUAT.bat" BuildCookRun -project="${workspace}/${DEMO_PROJECT_ROOT}/RuyiSDKDemo.uproject" -noP4 -platform=Win64 -clientconfig=Development -serverconfig=Development -cook -maps=AllMaps --NoCompile -stage -pak -archive -archivedirectory="${workspace}/${COOKED_ROOT}"
-					ren {COOKED_ROOT.replaceAll('/','\\\\')}\\WindowsNoEditor RuyiSDKDemo
+					del ${DEMO_PROJECT_ROOT}\\Pack.zip /F /Q
+					del ${COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo /F /S /Q
+					"${UE_ROOT}/Build/BatchFiles/RunUAT.bat" BuildCookRun -project="${workspace}/${DEMO_PROJECT_ROOT}/RuyiSDKDemo.uproject" -noP4 -platform=Win64 -clientconfig=Development -serverconfig=Development -cook -maps=AllMaps --NoCompile -stage -pak -archive -archivedirectory="${workspace}/${COOKED_ROOT}"
+					ren ${COOKED_ROOT.replaceAll('/','\\\\')}\\WindowsNoEditor RuyiSDKDemo
 					xcopy ${RUYI_SDK_CPP}\\lib\\libzmq.dll ${COOKED_ROOT.replaceAll('/','\\\\')}\\RuyiSDKDemo\\libzmq.dll
 				"""
 			}
@@ -169,7 +169,7 @@ pipeline {
 		stage('Pack'){
 			steps{
 				bat """
-					${RUYI_DEV_ROOT}\\RuyiDev.exe AppRunner --pack --appPath="{COOKED_ROOT}"
+					${RUYI_DEV_ROOT}\\RuyiDev.exe AppRunner --pack --appPath="${COOKED_ROOT}"
 				"""
 			}
 			
