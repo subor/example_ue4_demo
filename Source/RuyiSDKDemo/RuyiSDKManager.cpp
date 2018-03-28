@@ -2,7 +2,9 @@
 #include "MainWidget.h"
 #include "RuyiSDKDemoCharacter.h"
 #include "Kismet/GameplayStatics.h"
-#include "boost/container/detail/json.hpp"
+//#include "boost/container/detail/json.hpp"
+
+
 #pragma comment(lib,"urlmon.lib") 
 
 FRuyiSDKManager* FRuyiSDKManager::Instance() 
@@ -35,6 +37,21 @@ void FRuyiSDKManager::InitRuyiSDK()
 	{
 		auto context = new Ruyi::RuyiSDKContext(Ruyi::RuyiSDKContext::Endpoint::PC, "localhost");
 		m_RuyiSDK = Ruyi::RuyiSDK::CreateSDKInstance(*context);
+		
+		//remember, if you initialize ruyinet, the user should already logined in main client, or you won't 
+		//able be get their logon profile. The RuyiSDK doesn't support login in game. The user should always
+		//login through main client. 
+		m_RuyiSDK->RuyiNet->Initialise(APPID, GAMEID);
+		CurPlayerProfile = m_RuyiSDK->RuyiNet->GetPlayer(0);
+
+		if (nullptr == CurPlayerProfile)
+		{
+			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Not login !!!"));
+		} else 
+		{
+			FString profileID = UTF8_TO_TCHAR(CurPlayerProfile->profileId.c_str());
+			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK profileID:%s"), *profileID);
+		}
 
 		IsSDKReady = true;
 		
@@ -143,8 +160,10 @@ void FRuyiSDKManager::StartRuyiSDKGetProfile(RuyiSDKRequestType requestType)
 #pragma endregion
 
 #pragma region ruyi sdk async request
+
 void FRuyiSDKManager::Ruyi_AsyncSDKRegister(FString& username, FString& password)
 {
+	/*
 	string userNameString(TCHAR_TO_UTF8(*username));
 	string passwordString(TCHAR_TO_UTF8(*password));
 
@@ -214,11 +233,25 @@ void FRuyiSDKManager::Ruyi_AsyncSDKRegister(FString& username, FString& password
 
 	MainWidget->IsRequestFinish = true;
 
-	EndThread();
+	EndThread();*/
 }
 
 void FRuyiSDKManager::Ruyi_AsyncSDKLogin(FString& username, FString& password)
 {
+	if (nullptr != CurPlayerProfile)
+	{
+		m_mutex.Lock();
+
+		MainWidget->IsLogin = true;
+
+		MainWidget->PlayerProfile.profileName = UTF8_TO_TCHAR(CurPlayerProfile->profileName.c_str());
+		MainWidget->PlayerProfile.email = UTF8_TO_TCHAR(CurPlayerProfile->email.c_str());
+		MainWidget->PlayerProfile.profileId = UTF8_TO_TCHAR(CurPlayerProfile->profileId.c_str());
+
+		m_mutex.Unlock();
+	}
+
+	/*
 	try
 	{
 		m_RuyiSDK->BCService->Authentication_ClearSavedProfileID(0);
@@ -236,7 +269,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLogin(FString& username, FString& password)
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLogin username:%s password:%s !!!"), *username, *password);
 
 		string ret;
-		m_RuyiSDK->BCService->Authentication_AuthenticateEmailPassword(ret, userNameString, passwordString, false, 0);
+		m_RuyiSDK->BCService->Authentication_AuthenticateEmailPassword(ret, userNameString, passwordString, true, 0);
 		
 		FString fRet = UTF8_TO_TCHAR(ret.c_str());
 
@@ -292,7 +325,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLogin(FString& username, FString& password)
 	catch (exception e)
 	{
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncLoginTestUser Authentication_AuthenticateEmailPassword exception !!!"));
-	}
+	}*/
 
 	MainWidget->IsRequestFinish = true;
 
@@ -301,6 +334,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLogin(FString& username, FString& password)
 
 void FRuyiSDKManager::Ruyi_AsyncSDKLoginOut() 
 {
+	/*
 	try
 	{
 		m_RuyiSDK->BCService->Authentication_ClearSavedProfileID(0);
@@ -314,27 +348,23 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLoginOut()
 	{
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoginOut Authentication_ClearSavedProfileID exception !!!"));
 	}
-
+	*/
 	MainWidget->IsRequestFinish = true;
 
 	EndThread();
 }
 
+
 void FRuyiSDKManager::Ruyi_AsyncSDKFriendList() 
 {
 	try
 	{
-		std::string ret;
-		m_RuyiSDK->BCService->Friend_ListFriends(ret, Ruyi::SDK::BrainCloudApi::FriendPlatform::brainCloud, true, 0);
+		Ruyi::RuyiNetFriendListResponse response;
+		m_RuyiSDK->RuyiNet->GetFriendService()->ListFriends(0, response);
+		
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList reponse.status:%d !!!"), response.status);
 
-		FString fstring = FString(ret.c_str());
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList %s !!!"), *fstring);
-
-		if (0 == fstring.Compare("")) return;
-
-		ParseFriendListData(fstring, TEXT("name"));
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList friends Num:%d !!!"), MainWidget->Friends.Num());
+		ParseFriendListData(response);
 	}
 	catch (exception e)
 	{
@@ -350,26 +380,19 @@ void FRuyiSDKManager::Ruyi_AsyncSDKAddFriends(TArray<FString>& friendIds)
 {
 	try 
 	{
-		std::vector<string> vecFriendId;
 		for (FString& id : friendIds)
 		{
 			string idStr(TCHAR_TO_UTF8(*id));
-			vecFriendId.push_back(idStr);
 
-			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends add friend id:%s"), *id);
+			//UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends add friend id:%s"), *id);
+			Ruyi::RuyiNetAddRemoveFriendResponse response;
+			m_RuyiSDK->RuyiNet->GetFriendService()->AddFriend(0, idStr, response);
 		}
+		
+		Ruyi::RuyiNetFriendListResponse response;
+		m_RuyiSDK->RuyiNet->GetFriendService()->ListFriends(0, response);
 
-		string ret;
-		m_RuyiSDK->BCService->Friend_AddFriends(ret, vecFriendId, 0);
-		m_RuyiSDK->BCService->Friend_ListFriends(ret, Ruyi::SDK::BrainCloudApi::FriendPlatform::brainCloud, true, 0);
-
-		FString fRet = UTF8_TO_TCHAR(ret.c_str());
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends fRet:%s"), *fRet);
-
-		ParseFriendListData(fRet, TEXT("name"));
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends friends Num:%d !!!"), MainWidget->Friends.Num());
+		ParseFriendListData(response);
 	}catch(exception e) 
 	{
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends Friend_AddFriends exception !!!"));
@@ -384,26 +407,21 @@ void FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendIds)
 {
 	try
 	{
-		std::vector<string> vecFriendId;
 		for (FString& id : friendIds)
 		{
 			string idStr(TCHAR_TO_UTF8(*id));
-			vecFriendId.push_back(idStr);
 
 			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends add friend id:%s"), *id);
+			
+			Ruyi::RuyiNetAddRemoveFriendResponse response;
+			m_RuyiSDK->RuyiNet->GetFriendService()->RemoveFriend(0, idStr, response);
 		}
 
-		string ret;
-		m_RuyiSDK->BCService->Friend_RemoveFriends(ret, vecFriendId, 0);
-		m_RuyiSDK->BCService->Friend_ListFriends(ret, Ruyi::SDK::BrainCloudApi::FriendPlatform::brainCloud, true, 0);
+		
+		Ruyi::RuyiNetFriendListResponse response;
+		m_RuyiSDK->RuyiNet->GetFriendService()->ListFriends(0, response);
 
-		FString fRet = UTF8_TO_TCHAR(ret.c_str());
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends fRet:%s"), *fRet);
-
-		ParseFriendListData(fRet, TEXT("name"));
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends friends Num:%d !!!"), MainWidget->Friends.Num());
+		ParseFriendListData(response);
 	}
 	catch (exception e)
 	{
@@ -419,60 +437,30 @@ void FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers(int rangeDelta, int nu
 {
 	try
 	{
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers range:%d num:%d !!!"), rangeDelta, numMatches);
-
-		string ret;
-		m_RuyiSDK->BCService->MatchMaking_FindPlayers(ret, rangeDelta, numMatches, 0);
-
-		FString fRet = UTF8_TO_TCHAR(ret.c_str());
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers ret:%s !!!"), *fRet);
-
-		TSharedPtr<FJsonObject> jsonParsed;
-		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
-
-		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+		Ruyi::RuyiNetFindPlayersResponse response;
+		m_RuyiSDK->RuyiNet->GetMatchmakingService()->FindPlayers(0, rangeDelta, numMatches, response);
+		
+		if (200 == response.status) 
 		{
-			int status = jsonParsed->GetIntegerField("status");
+			m_mutex.Lock();
+			MainWidget->Matches.Empty();
+			m_mutex.Unlock();
 
-			if (JSON_RESPONSE_OK == status)
+			std::list<Ruyi::RuyiNetFindPlayersResponse::Data::MatchesFound>::iterator it;
+			for (it = response.data.matchesFound.begin(); it != response.data.matchesFound.end(); ++it)
 			{
+				FRuyiNetProfile playerProfile;
+				
+				playerProfile.profileId = FString(it->playerId.c_str());
+				playerProfile.profileName = FString(it->playerName.c_str());
+				playerProfile.pictureUrl = FString(it->pictureUrl.c_str());
+
 				m_mutex.Lock();
-				MainWidget->Matches.Empty();
+				MainWidget->Matches.Add(playerProfile);
 				m_mutex.Unlock();
-
-				TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
-
-				TArray<TSharedPtr<FJsonValue>> matches = dataJsonObject->GetArrayField("matchesFound");
-
-				for (int i = 0; i < matches.Num(); ++i)
-				{
-					FRuyiNetProfile playerProfile;
-					FString name("");
-					FString pictureUrl("");
-					FString playerId("");
-
-					if (matches[i]->AsObject()->TryGetStringField("playerId", playerId))
-					{
-						playerProfile.profileId = playerId;
-					}
-					if (matches[i]->AsObject()->TryGetStringField("playerName", name))
-					{
-						playerProfile.profileName = name;
-					}
-					if (matches[i]->AsObject()->TryGetStringField("pictureUrl", pictureUrl))
-					{
-						playerProfile.pictureUrl = pictureUrl;
-					}
-					
-					m_mutex.Lock();
-					MainWidget->Matches.Add(playerProfile);
-					m_mutex.Unlock();
-				}
 			}
 		}
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers num:%d !!!"), MainWidget->Matches.Num());
+		
 	}
 	catch (exception e)
 	{
@@ -519,31 +507,15 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score)
 		string cloudPath = "test/files";
 		string localPath = TCHAR_TO_UTF8(*path);
 		string cloudFileName = TCHAR_TO_UTF8(*m_SaveCloudFileName);
-		string ret;
-		m_RuyiSDK->BCService->File_UploadFile(ret, cloudPath, cloudFileName, true, true, localPath, 0);
-
-		FString fRet = UTF8_TO_TCHAR(ret.c_str());
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKSave ret:%s !!!"), *fRet);
 		
-		TSharedPtr<FJsonObject> jsonParsed;
-		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
-
-		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+		Ruyi::RuyiNetUploadFileResponse response;
+		m_RuyiSDK->RuyiNet->GetUserFileService()->UploadFile(0, cloudPath, cloudFileName, true, true, localPath, response);
+		
+		if (200 == response.status)
 		{
-			int status = jsonParsed->GetIntegerField("status");
-
-			if (JSON_RESPONSE_OK == status)
-			{
-				TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField("data");
-				TSharedPtr<FJsonObject> fileDetailsJsonObject = dataJsonObject->GetObjectField("fileDetails");
-				if (fileDetailsJsonObject.IsValid())
-				{
-					m_mutex.Lock();
-					MainWidget->IsSaveSucceed = true;
-					m_mutex.Unlock();
-				}
-			}
+			m_mutex.Lock();
+			MainWidget->IsSaveSucceed = true;
+			m_mutex.Unlock();
 		}
 	}catch(exception e) 
 	{
@@ -563,36 +535,8 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile)
 		string ret;
 		string cloudFileName = TCHAR_TO_UTF8(*m_SaveCloudFileName);
 
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoad cloudFileName:%s !!!"), *m_SaveCloudFileName);
-
-		m_RuyiSDK->BCService->File_DownloadFile(ret, cloudPath, cloudFileName, true, 0);
-
-		FString fRet = UTF8_TO_TCHAR(ret.c_str());
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoad ret:%s !!!"), *fRet);
-		TSharedPtr<FJsonObject> jsonParsed;
-		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
-
-		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed)) 
-		{
-			int status = jsonParsed->GetIntegerField("status");
-
-			if (JSON_RESPONSE_OK == status) 
-			{
-				TSharedPtr<FJsonObject> dataObject = jsonParsed->GetObjectField("data");
-				if (dataObject.IsValid()) 
-				{
-					FString localPath;
-					if (dataObject->TryGetStringField(TEXT("localPath"), localPath)) 
-					{
-						//ReadSaveFile(localPath);
-						m_mutex.Lock();
-						MainWidget->SavePath = localPath;
-						m_mutex.Unlock();
-					}
-				}
-			}
-		}
+		Ruyi::RuyiNetResponse response;
+		m_RuyiSDK->RuyiNet->GetUserFileService()->DownloadFile(0, cloudPath, cloudFileName, response);
 	}catch(exception e)
 	{
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKLoad File_DownloadFile exception !!!"));
@@ -697,22 +641,16 @@ void FRuyiSDKManager::Ruyi_AsyncSDKUploadFileToStorageLayer()
 	EndThread();
 }
 
-void FRuyiSDKManager::Ruyi_AyncSDKLeaderboard() 
+void FRuyiSDKManager::Ruyi_AyncSDKLeaderboard(int startIndex, int endIndex)
 {
 	try 
 	{
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::StartRuyiSDKLeaderboard !!!"));
 		
-		std::string ret;
-		
-		nlohmann::json jsonscript =
-		{
-			{ "leaderboardId", "aaa" },
-			{ "type", "HIGH_VALUE" },
-			{ "rotationType", "DAILY" },
-			{ "versionsToRetain", 1 }
-		};
-		m_RuyiSDK->BCService->Script_RunParentScript(ret, "CreateLeaderboard", jsonscript, "RUYI", 0);
+		if (nullptr == CurPlayerProfile) return;
+
+		Ruyi::RuyiNetLeaderboardResponse response;
+		m_RuyiSDK->RuyiNet->GetLeaderboardService()->GetGlobalLeaderboardPage(0, CurPlayerProfile->profileId, Ruyi::SDK::BrainCloudApi::SortOrder::type::HIGH_TO_LOW, startIndex, endIndex, response);
 		
 	} catch (exception e) 
 	{
@@ -724,47 +662,13 @@ void FRuyiSDKManager::Ruyi_AyncSDKLeaderboard()
 	EndThread();
 }
 
-void FRuyiSDKManager::Ruyi_AsyncSDKGetProfile()
+void FRuyiSDKManager::Ruyi_AsyncSDKGetProfile(std::string profileId)
 {
 	try 
 	{
-		std::string ret;
-		m_RuyiSDK->BCService->Identity_SwitchToSingletonChildProfile(ret, "11499", true, 0);
-		FString fRet = UTF8_TO_TCHAR(ret.c_str());
-
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager Ruyi_AsyncSDKGetProfile ret:%s !!!"), *fRet);
-		TSharedPtr<FJsonObject> jsonParsed;
-		TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(fRet);
-
-		if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
-		{
-			int status = jsonParsed->GetIntegerField("status");
-
-			if (JSON_RESPONSE_OK == status) 
-			{
-				TSharedPtr<FJsonObject> dataObject = jsonParsed->GetObjectField("data");
-				if (dataObject.IsValid())
-				{
-					FString fPlayerName;
-					FString fProfileId;
-					if (dataObject->TryGetStringField(TEXT("playerName"), fPlayerName)
-						&& dataObject->TryGetStringField(TEXT("profileId"), fProfileId))
-					{
-						UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager Ruyi_AsyncSDKGetProfile playerName:%s !!!"), *fPlayerName);
-
-						string playerName = TCHAR_TO_UTF8(*fPlayerName);
-						string profileId = TCHAR_TO_UTF8(*fProfileId);
-
-						nlohmann::json payload = { "profileId", profileId };
-						m_RuyiSDK->BCService->Script_RunParentScript(ret, "GetProfile", payload, "RUYI", 0);
-
-						UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager Ruyi_AsyncSDKGetProfile RunParentScript ret:%s !!!"), *fRet);
-					}
-
-
-				}
-			}
-		}
+		Ruyi::RuyiNetGetProfileResponse response;
+		m_RuyiSDK->RuyiNet->GetFriendService()->GetProfile(0, profileId, response);
+		
 	} catch(std::exception e)
 	{
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager Ruyi_AsyncSDKGetProfile exception !!!"));
@@ -778,49 +682,36 @@ void FRuyiSDKManager::Ruyi_AsyncSDKGetProfile()
 #pragma endregion
 
 #pragma region data handle
-void FRuyiSDKManager::ParseFriendListData(FString& jsonData, FString nameField)
+
+void FRuyiSDKManager::ParseFriendListData(Ruyi::RuyiNetFriendListResponse& response)
 {
-	TSharedPtr<FJsonObject> jsonParsed;
-	TSharedRef<TJsonReader<TCHAR>> jsonReader = TJsonReaderFactory<TCHAR>::Create(jsonData);
-
-	if (FJsonSerializer::Deserialize(jsonReader, jsonParsed))
+	if (response.status == 200)
 	{
-		int status = jsonParsed->GetIntegerField(TEXT("status"));
+		m_mutex.Lock();
+		MainWidget->Friends.Empty();
 
-		if (JSON_RESPONSE_OK == status)
+		int friendNum = response.data.response.friends.size();
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::ParseFriendListData friendNum:%d !!!"), friendNum);
+
+		std::vector<Ruyi::RuyiNetFriendListResponse::Data::Response::Friend>::iterator it;
+		for (it = response.data.response.friends.begin(); it != response.data.response.friends.end(); ++it)
 		{
-			m_mutex.Lock();
-			MainWidget->Friends.Empty();
-			m_mutex.Unlock();
+			FString fplayerId = FString(it->playerId.c_str());
 
-			TSharedPtr<FJsonObject> dataJsonObject = jsonParsed->GetObjectField(TEXT("data"));
-			TArray<TSharedPtr<FJsonValue>> friendArray = dataJsonObject->GetArrayField(TEXT("friends"));
-			for (int i = 0; i < friendArray.Num(); ++i)
-			{
-				FRuyiNetProfile friendProfile;
+			//UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::ParseFriendListData playerID:%s !!!"), *fplayerId);
 
-				FString name("");
-				FString pictureUrl("");
-				FString playerId("");
+			FRuyiNetProfile friendProfile;
+			friendProfile.profileId = FString(it->playerId.c_str());
+			friendProfile.profileName = FString(it->name.c_str());
+			friendProfile.pictureUrl = FString(it->pictureUrl.c_str());
+			friendProfile.summaryFriendData.dob = FString(it->summaryFriendData.dob.c_str());
+			friendProfile.summaryFriendData.gender = FString(it->summaryFriendData.gender.c_str());
+			friendProfile.summaryFriendData.location = FString(it->summaryFriendData.location.c_str());
 
-				if (friendArray[i]->AsObject()->TryGetStringField(TEXT("playerId"), playerId))
-				{
-					friendProfile.profileId = playerId;
-				}
-				if (friendArray[i]->AsObject()->TryGetStringField(nameField, name))
-				{
-					friendProfile.profileName = name;
-				}
-				if (friendArray[i]->AsObject()->TryGetStringField("pictureUrl", pictureUrl))
-				{
-					friendProfile.pictureUrl = pictureUrl;
-				}
-
-				m_mutex.Lock();
-				MainWidget->Friends.Add(friendProfile);
-				m_mutex.Unlock();
-			}
+			MainWidget->Friends.Add(friendProfile);
 		}
+
+		m_mutex.Unlock();
 	}
 }
 
@@ -882,13 +773,13 @@ uint32 FRuyiSDKManager::Run()
 			switch(m_RuyiSDKRequestType)
 			{
 			case RuyiSDKRequestType::RuyiSDKRequestTypeRegister:
-				Ruyi_AsyncSDKRegister(m_Username, m_Password);
+				//Ruyi_AsyncSDKRegister(m_Username, m_Password);
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestTypeLogin:
 				Ruyi_AsyncSDKLogin(m_Username, m_Password);
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestTypeLoginOut:
-				Ruyi_AsyncSDKLoginOut();
+				//Ruyi_AsyncSDKLoginOut();
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestTypeFriendList:
 				Ruyi_AsyncSDKFriendList();
@@ -915,10 +806,10 @@ uint32 FRuyiSDKManager::Run()
 				Ruyi_AsyncSDKUploadFileToStorageLayer();
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestGetLeaderboard:
-				Ruyi_AyncSDKLeaderboard();
+				Ruyi_AyncSDKLeaderboard(0, 10);
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestGetProfile:
-				Ruyi_AsyncSDKGetProfile();
+				Ruyi_AsyncSDKGetProfile(CurPlayerProfile->profileId);
 				break;
 			default:
 				break;

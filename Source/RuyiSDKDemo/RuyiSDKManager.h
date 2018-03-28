@@ -13,9 +13,25 @@
 
 #include "RuyiSDK.h"
 
+#include "RuyiNet/Response/RuyiNetFriendResponse.h"
+#include "RuyiNet/Response/RuyiNetProfile.h"
+#include "RuyiNet/Response/RuyiNetLeaderboardResponse.h"
+#include "RuyiNet/Response/RuyiNetGetProfileResponse.h"
+#include "RuyiNet/Response/RuyiNetFindPlayersResponse.h"
+#include "RuyiNet/Response/RuyiNetUploadFileResponse.h"
+
+#include "RuyiNet/Service/RuyiNetFriendService.h"
+#include "RuyiNet/Service/RuyiNetLeaderboardService.h"
+#include "RuyiNet/Service/RuyiNetMatchmakingService.h"
+#include "RuyiNet/Service/RuyiNetuserFileService.h"
 //tempory
 #define APPID "11499"
 #define GAMEID "Shooter"
+
+/// <summary>
+/// RuyiSDk provide most function include console hardware-related function, user-related data transport.
+/// 
+/// </summary>
 
 class FRuyiSDKManager : public FRunnable
 {
@@ -26,9 +42,13 @@ public:
 	class UMainWidget* MainWidget;
 
 public:
+	//users should always login/register in main client.
+	//RuyiNet won't provide these function. You can still use them by RuyiSDK->BCService but we don't 
+	//recommend that and we'll remove them in later version
 	void StartRuyiSDKRegister(FString& username, FString& password, RuyiSDKRequestType requestType);
 	void StartRuyiSDKLogin(FString& username, FString& password, RuyiSDKRequestType requestType);
 	void StartRuyiSDKLoginout(RuyiSDKRequestType requestType);
+
 	void StartRuyiSDKFriendList(RuyiSDKRequestType requestType);
 	void StartRuyiSDKMatchMakingFindPlayers(int rangeDelta, int numMatches, RuyiSDKRequestType requestType);
 	void StartRuyiSDKAddFriends(TArray<FString>& profileIds, RuyiSDKRequestType requestType);
@@ -57,6 +77,8 @@ private:
 	Ruyi::RuyiSDK* m_RuyiSDK;
 
 	//ruyi sdk data related
+	const Ruyi::RuyiNetProfile* CurPlayerProfile;
+
 	FString m_Username;
 	FString m_Password;
 
@@ -68,7 +90,8 @@ private:
 	FString m_PlayerId;
 	int m_Score;
 	FRuyiNetProfile* m_Profile;
-	void ParseFriendListData(FString& jsonData, FString nameField);
+
+	void ParseFriendListData(Ruyi::RuyiNetFriendListResponse& response);
 
 	FString m_SaveCloudFileName;
 	void ReadSaveFile(FString& localPath);
@@ -79,6 +102,7 @@ private:
 	void Ruyi_AsyncSDKRegister(FString& username, FString& password);
 	void Ruyi_AsyncSDKLogin(FString& username, FString& password);
 	void Ruyi_AsyncSDKLoginOut();
+	
 	void Ruyi_AsyncSDKFriendList();
 	void Ruyi_AsyncSDKMatchMakingFindPlayers(int rangeDelta, int numMatches);
 	void Ruyi_AsyncSDKAddFriends(TArray<FString>& friendIds);
@@ -89,8 +113,8 @@ private:
 	void Ruyi_AsyncSDKSettingSystem(FRuyiSystemSettingData* settingData);
 	void Ruyi_AsyncSDKUploadFileToStorageLayer();
 
-	void Ruyi_AyncSDKLeaderboard();
-	void Ruyi_AsyncSDKGetProfile();
+	void Ruyi_AyncSDKLeaderboard(int startIndex, int endIndex);
+	void Ruyi_AsyncSDKGetProfile(std::string profileId);
 
 	//multi-thread
 	void StartThread();
