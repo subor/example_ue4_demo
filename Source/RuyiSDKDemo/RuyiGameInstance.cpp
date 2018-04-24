@@ -10,6 +10,8 @@ void URuyiGameInstance::Shutdown()
 	if (FRuyiSDKManager::Instance()->IsSDKReady) 
 	{
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->Unsubscribe("service/inputmanager");
+
+		FRuyiSDKManager::Instance()->ShutDown();
 	}
 
 	Super::Shutdown();

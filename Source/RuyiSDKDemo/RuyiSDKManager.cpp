@@ -18,6 +18,16 @@ Ruyi::RuyiSDK* FRuyiSDKManager::SDK()
 	return m_RuyiSDK;
 }
 
+void FRuyiSDKManager::ShutDown() 
+{
+	EndThread();
+	if (nullptr != m_RuyiSDK) 
+	{
+		delete m_RuyiSDK;
+		m_RuyiSDK = nullptr;
+	}
+}
+
 FRuyiSDKManager::FRuyiSDKManager() 
 {
 	m_RuyiSDK = nullptr;
@@ -25,7 +35,7 @@ FRuyiSDKManager::FRuyiSDKManager()
 	m_ThreadBegin = false;
 	m_Thread = nullptr;
 	
-	InitRuyiSDK();
+	//InitRuyiSDK();
 
 	m_SaveCloudFileName = TEXT("unrealRuyiSDKDemo1.sav");
 }
@@ -35,27 +45,31 @@ void FRuyiSDKManager::InitRuyiSDK()
 	UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK  !!!!!!!!!!!!!!!!!!!!!!"));
 	try
 	{
-		auto context = new Ruyi::RuyiSDKContext(Ruyi::RuyiSDKContext::Endpoint::PC, "localhost");
-		m_RuyiSDK = Ruyi::RuyiSDK::CreateSDKInstance(*context);
-		
-		//remember, if you initialize ruyinet, the user should already logined in main client, or you won't 
-		//able be get their logon profile. The RuyiSDK doesn't support login in game. The user should always
-		//login through main client. 
-		m_RuyiSDK->RuyiNet->Initialise(APPID, GAMEID);
-		CurPlayerProfile = m_RuyiSDK->RuyiNet->GetPlayer(0);
+		if (nullptr == m_RuyiSDK) 
+		{
+			auto context = new Ruyi::RuyiSDKContext(Ruyi::RuyiSDKContext::Endpoint::PC, "localhost");
+			m_RuyiSDK = Ruyi::RuyiSDK::CreateSDKInstance(*context);
 
-		if (nullptr == CurPlayerProfile)
-		{
-			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Not login !!!"));
-		} else 
-		{
-			FString profileID = UTF8_TO_TCHAR(CurPlayerProfile->profileId.c_str());
-			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK profileID:%s"), *profileID);
+			//remember, if you initialize ruyinet, the user should already logined in main client, or you won't 
+			//able be get their logon profile. The RuyiSDK doesn't support login in game. The user should always
+			//login through main client. 
+			m_RuyiSDK->RuyiNet->Initialise(APPID, GAMEID);
+			CurPlayerProfile = m_RuyiSDK->RuyiNet->GetPlayer(0);
+
+			if (nullptr == CurPlayerProfile)
+			{
+				UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Not login !!!"));
+			}
+			else
+			{
+				FString profileID = UTF8_TO_TCHAR(CurPlayerProfile->profileId.c_str());
+				UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK profileID:%s"), *profileID);
+			}
+
+			IsSDKReady = true;
+
+			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Success !!!"));
 		}
-
-		IsSDKReady = true;
-		
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK Success !!!"));
 	}
 	catch (exception e)
 	{

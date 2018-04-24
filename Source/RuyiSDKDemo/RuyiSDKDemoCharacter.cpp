@@ -57,13 +57,12 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 
 	UE_LOG(CommonLog, Log, TEXT("ARuyiSDKDemoCharacter::BeginPlay()"));
 
-	FRuyiSDKManager::Instance();
+	FRuyiSDKManager::Instance()->InitRuyiSDK();
 	
 	const string* pChar = &Ruyi::SDK::Constants::g_ConstantsSDKDataTypes_constants.layer0_publisher_out_uri;
 	string* modifier = const_cast<string*>(pChar);
 	replace_all(*modifier, "{addr}", "localhost");
 
-	
 	if (FRuyiSDKManager::Instance()->IsSDKReady)
 	{
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmanager_internal");

@@ -38,7 +38,11 @@ class FRuyiSDKManager : public FRunnable
 public:
 	static FRuyiSDKManager* Instance();
 	Ruyi::RuyiSDK* SDK();
+	
+	void InitRuyiSDK();
 
+	//destroy the SDK instance, call this when your game is over
+	void ShutDown();
 	class UMainWidget* MainWidget;
 
 public:
@@ -72,7 +76,6 @@ public:
 
 private:
 	FRuyiSDKManager();
-	void InitRuyiSDK();
 
 	Ruyi::RuyiSDK* m_RuyiSDK;
 
