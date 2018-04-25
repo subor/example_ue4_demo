@@ -693,6 +693,42 @@ void FRuyiSDKManager::Ruyi_AsyncSDKGetProfile(std::string profileId)
 	EndThread();
 }
 
+void FRuyiSDKManager::Ruyi_AsyncSDKTelemetryStart() 
+{
+	try
+	{
+		Ruyi::RuyiNetTelemetrySession session;
+		Ruyi::RuyiNetTelemetrySessionResponse response;
+		m_RuyiSDK->RuyiNet->GetTelemetryService()->StartTelemetrySession(0, response, session);
+		m_TelemetrySessionId = session.GetId();
+	}
+	catch (std::exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager Ruyi_AsyncSDKTelemetryStart exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
+void FRuyiSDKManager::Ruyi_AsyncSDKTelemetryEnd() 
+{
+	try
+	{
+		Ruyi::RuyiNetResponse response;
+		m_RuyiSDK->RuyiNet->GetTelemetryService()->EndTelemetrySession(0, m_TelemetrySessionId, response);
+	}
+	catch (std::exception e)
+	{
+		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager Ruyi_AsyncSDKTelemetryStart exception !!!"));
+	}
+
+	MainWidget->IsRequestFinish = true;
+
+	EndThread();
+}
+
 #pragma endregion
 
 #pragma region data handle

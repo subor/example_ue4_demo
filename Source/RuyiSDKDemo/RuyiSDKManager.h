@@ -19,11 +19,14 @@
 #include "RuyiNet/Response/RuyiNetGetProfileResponse.h"
 #include "RuyiNet/Response/RuyiNetFindPlayersResponse.h"
 #include "RuyiNet/Response/RuyiNetUploadFileResponse.h"
+#include "RuyiNet/Response/RuyiNetTelemetrySessionResponse.h"
 
 #include "RuyiNet/Service/RuyiNetFriendService.h"
 #include "RuyiNet/Service/RuyiNetLeaderboardService.h"
 #include "RuyiNet/Service/RuyiNetMatchmakingService.h"
 #include "RuyiNet/Service/RuyiNetuserFileService.h"
+#include "RuyiNet/Service/RuyiNetTelemetryService.h"
+
 //tempory
 #define APPID "11499"
 #define GAMEID "Shooter"
@@ -101,6 +104,8 @@ private:
 
 	FRuyiSystemSettingData* m_SettingData;
 
+	string m_TelemetrySessionId;
+
 	//async request
 	void Ruyi_AsyncSDKRegister(FString& username, FString& password);
 	void Ruyi_AsyncSDKLogin(FString& username, FString& password);
@@ -118,6 +123,9 @@ private:
 
 	void Ruyi_AyncSDKLeaderboard(int startIndex, int endIndex);
 	void Ruyi_AsyncSDKGetProfile(std::string profileId);
+
+	void Ruyi_AsyncSDKTelemetryStart();
+	void Ruyi_AsyncSDKTelemetryEnd();
 
 	//multi-thread
 	void StartThread();
