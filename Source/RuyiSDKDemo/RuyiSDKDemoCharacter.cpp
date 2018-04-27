@@ -96,7 +96,7 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::t
 	//We recommand you listener all the input in c++ from Ruyi SDK, then call in blueprints
 
 	FString fTopic = UTF8_TO_TCHAR(topic.c_str());
-	//UE_LOG(LogPlatformer, Log, TEXT("InputStateChangeHandler DDDDDDDDDDDDDD topic:%s"), *fTopic);
+	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler DDDDDDDDDDDDDD topic:%s"), *fTopic);
 
 	auto idsc = dynamic_cast<Ruyi::SDK::UserServiceExternal::InputActionEvent*>(msg);
 
@@ -117,10 +117,10 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::t
 	//NewValue is the current key state, if your press down, NewValue will be 1, when you release, NewValue will be 2, OldValue will be 1
 	int triggerNumber = idsc->Triggers.size();
 
-	UE_LOG(LogPlatformer, Log, TEXT("InputStateChangeHandler userId:%s action:%s triggers Num:%d"), *fUserId, *fAction, triggerNumber);
+	UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler userId:%s action:%s triggers Num:%d"), *fUserId, *fAction, triggerNumber);
 	std::for_each(idsc->Triggers.begin(), idsc->Triggers.end(), [&](Ruyi::SDK::UserServiceExternal::TriggerKeys& key)
 	{
-		//UE_LOG(LogPlatformer, Log, TEXT("InputStateChangeHandler deviceType:%d, key:%d, newValue:%d, oldValue:%d"), key.DeviceType, key.Key, key.NewValue, key.OldValue);
+		//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler deviceType:%d, key:%d, newValue:%d, oldValue:%d"), key.DeviceType, key.Key, key.NewValue, key.OldValue);
 
 		if (Ruyi::SDK::GlobalInputDefine::RuyiInputDeviceType::Keyboard == key.DeviceType)
 		{
