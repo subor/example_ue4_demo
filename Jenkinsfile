@@ -36,7 +36,7 @@ pipeline {
 		//Ruyi SDK CPP folder
 		RUYI_SDK_CPP = "${TEMP_DIR}\\archives\\RuyiSDKCpp"
 		//Ruyi DevTools folder
-		RUYI_DEV_ROOT = "${TEMP_DIR}\\archives\\DevTools_Internal"
+		RUYI_DEV_ROOT = "${TEMP_DIR}\\archives\\DevToolsInternal"
 		//Unreal Demo Root
 		DEMO_PROJECT_ROOT = "unreal_demo"
 		//DEMO SDK CPP folder
@@ -95,7 +95,7 @@ pipeline {
 					if(params.REF_BUILD_NUMBER?.trim())
 						sel = specific("${params.REF_BUILD_NUMBER}")
 						
-					step([$class:'CopyArtifact',filter:'archives/RuyiSDKCpp/**/*,archives/DevTools_Internal/**/*',target:"${TEMP_DIR}",projectName: "${jobName}",selector: sel])
+					step([$class:'CopyArtifact',filter:'RuyiSDKCpp/**/*,DevToolsInternal/**/*',target:"${TEMP_DIR}",projectName: "${jobName}",selector: sel])
 					
 					bat """
 						md ${DEMO_SDKCPP_ROOT}\\lib
