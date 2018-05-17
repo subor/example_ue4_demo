@@ -34,9 +34,9 @@ pipeline {
 		//Temp folder
 		TEMP_DIR = 'temp'
 		//Ruyi SDK CPP folder
-		RUYI_SDK_CPP = "${TEMP_DIR}\\archives\\RuyiSDKCpp"
+		RUYI_SDK_CPP = "${TEMP_DIR}\\RuyiSDKCpp"
 		//Ruyi DevTools folder
-		RUYI_DEV_ROOT = "${TEMP_DIR}\\archives\\DevToolsInternal"
+		RUYI_DEV_ROOT = "${TEMP_DIR}\\DevToolsInternal"
 		//Unreal Demo Root
 		DEMO_PROJECT_ROOT = "unreal_demo"
 		//DEMO SDK CPP folder
