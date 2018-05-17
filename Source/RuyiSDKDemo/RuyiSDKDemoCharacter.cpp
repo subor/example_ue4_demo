@@ -115,13 +115,61 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::t
 	//Key: the key of your input device
 	//NewValue/OldValue:  could be three value:0,1,2.  1 means press Down 2 means release 0 not define yet
 	//NewValue is the current key state, if your press down, NewValue will be 1, when you release, NewValue will be 2, OldValue will be 1
+	//action:the Key value of config file.
+
+	//you can judge the input key by "action" value of Triggers structure. The value of "action" can be modified
+	//in config file of the game package. Now I just hard-core in code. We'll try to optimise this part
+	//in future release
+	//all default system action value: (Layer0/RuyiLocalRoot/Resources/configs/UserSetting)
+	//GamePad_LB
+	//GamePad_LT
+	//GamePad_L3
+	//GamePad_RB
+	//GamePad_RT
+	//GamePad_R3
+	//GamePad_UP
+	//GamePad_Down
+	//GamePad_Left
+	//GamePad_Down
+	//GamePad_Home
+	//GamePad_Back
+	//GamePad_Start
+	//GamePad_X
+	//GamePad_Y
+	//GamePad_A
+	//GamePad_B
+	//GamePad_LJoyX
+	//GamePad_LJoyY
+	//GamePad_RJoyX
+	//GamePad_RJoyY
 	int triggerNumber = idsc->Triggers.size();
 
 	UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler userId:%s action:%s triggers Num:%d"), *fUserId, *fAction, triggerNumber);
 	std::for_each(idsc->Triggers.begin(), idsc->Triggers.end(), [&](Ruyi::SDK::UserServiceExternal::TriggerKeys& key)
 	{
 		//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler deviceType:%d, key:%d, newValue:%d, oldValue:%d"), key.DeviceType, key.Key, key.NewValue, key.OldValue);
-
+		
+		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Up")))
+		{
+			//Up Button Press
+		}
+		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Down")))
+		{
+			//Down Button release
+		}
+		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Left")))
+		{
+			//Left Button Input press
+		}
+		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Right")))
+		{
+			//Right Button Input release
+		}
+		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Up")))
+		{
+			//
+		}
+		/*
 		if (Ruyi::SDK::GlobalInputDefine::RuyiInputDeviceType::Keyboard == key.DeviceType)
 		{
 			if ((Ruyi::SDK::GlobalInputDefine::Key::W == key.Key || Ruyi::SDK::GlobalInputDefine::Key::Up == key.Key) && (1 == key.NewValue))
@@ -140,6 +188,7 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::t
 			{
 			}
 		} else {}
+		*/
 	});
 }
 
