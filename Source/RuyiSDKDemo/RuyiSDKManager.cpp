@@ -20,12 +20,16 @@ Ruyi::RuyiSDK* FRuyiSDKManager::SDK()
 
 void FRuyiSDKManager::ShutDown() 
 {
+	/*
 	EndThread();
 	if (nullptr != m_RuyiSDK) 
 	{
 		delete m_RuyiSDK;
 		m_RuyiSDK = nullptr;
 	}
+	*/
+	m_RuyiSDKRequestType = RuyiSDKRequestType::RuyiSDKGameExit;
+	StartThread();
 }
 
 FRuyiSDKManager::FRuyiSDKManager() 
@@ -729,6 +733,17 @@ void FRuyiSDKManager::Ruyi_AsyncSDKTelemetryEnd()
 	EndThread();
 }
 
+void FRuyiSDKManager::Ruyi_AsyncSDKDestroy()
+{
+	if (nullptr != m_RuyiSDK)
+	{
+		delete m_RuyiSDK;
+		m_RuyiSDK = nullptr;
+	}
+
+	EndThread();
+}
+
 #pragma endregion
 
 #pragma region data handle
@@ -860,6 +875,9 @@ uint32 FRuyiSDKManager::Run()
 				break;
 			case RuyiSDKRequestType::RuyiSDKRequestGetProfile:
 				Ruyi_AsyncSDKGetProfile(CurPlayerProfile->profileId);
+				break;
+			case RuyiSDKRequestType::RuyiSDKGameExit:
+				Ruyi_AsyncSDKDestroy();
 				break;
 			default:
 				break;

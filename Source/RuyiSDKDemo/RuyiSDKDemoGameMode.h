@@ -24,6 +24,8 @@ enum class RuyiSDKRequestType : uint8
 	RuyiSDKRequestUploadFileToStorageLayer,
 	RuyiSDKRequestGetLeaderboard,
 	RuyiSDKRequestGetProfile,
+
+	RuyiSDKGameExit,
 };
 
 

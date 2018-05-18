@@ -96,5 +96,10 @@ public:
 
 private:
 	void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg);
+
+	void RuyiInputListener();
+
+	float moveXAxis;
+	float moveYAxis;
 };
 

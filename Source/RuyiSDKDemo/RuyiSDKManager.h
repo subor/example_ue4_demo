@@ -127,6 +127,8 @@ private:
 	void Ruyi_AsyncSDKTelemetryStart();
 	void Ruyi_AsyncSDKTelemetryEnd();
 
+	void Ruyi_AsyncSDKDestroy();
+
 	//multi-thread
 	void StartThread();
 	void EndThread();

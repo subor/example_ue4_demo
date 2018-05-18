@@ -65,7 +65,7 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 
 	if (FRuyiSDKManager::Instance()->IsSDKReady)
 	{
-		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmanager_internal");
+		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/user_service_external");
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler);
 	}
 
@@ -75,6 +75,8 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 void ARuyiSDKDemoCharacter::Tick(float DeltaSeconds) 
 {
 	Super::Tick(DeltaSeconds);
+
+	RuyiInputListener();
 }
 
 void ARuyiSDKDemoCharacter::Ruyi_StartTest()
@@ -144,30 +146,51 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::t
 	//GamePad_RJoyY
 	int triggerNumber = idsc->Triggers.size();
 
-	UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler userId:%s action:%s triggers Num:%d"), *fUserId, *fAction, triggerNumber);
+	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler userId:%s action:%s triggers Num:%d"), *fUserId, *fAction, triggerNumber);
 	std::for_each(idsc->Triggers.begin(), idsc->Triggers.end(), [&](Ruyi::SDK::UserServiceExternal::TriggerKeys& key)
 	{
-		//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler deviceType:%d, key:%d, newValue:%d, oldValue:%d"), key.DeviceType, key.Key, key.NewValue, key.OldValue);
+		UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler deviceType:%d, key:%d, newValue:%d, oldValue:%d"), key.DeviceType, key.Key, key.NewValue, key.OldValue);
 		
 		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Up")))
 		{
+			moveYAxis = 1;
+		}
+		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Up")))
+		{
 			//Up Button Press
+			moveYAxis = 0;
+		}
+		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Down")))
+		{
+			moveYAxis = -1;
 		}
 		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Down")))
 		{
-			//Down Button release
+			moveYAxis = 0;
 		}
 		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Left")))
 		{
-			//Left Button Input press
+			moveXAxis = -1;
+		}
+		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Left")))
+		{
+			moveXAxis = 0;
+		}
+		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Right")))
+		{
+			moveXAxis = 1;
 		}
 		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Right")))
 		{
-			//Right Button Input release
+			moveXAxis = 0;
 		}
-		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Up")))
+		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_X")))
 		{
-			//
+			Jump();
+		}
+		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_X")))
+		{
+			StopJumping();
 		}
 		/*
 		if (Ruyi::SDK::GlobalInputDefine::RuyiInputDeviceType::Keyboard == key.DeviceType)
@@ -190,6 +213,12 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::t
 		} else {}
 		*/
 	});
+}
+
+void ARuyiSDKDemoCharacter::RuyiInputListener()
+{
+	MoveRight(moveXAxis);
+	MoveForward(moveYAxis);
 }
 
 // Input
@@ -244,6 +273,7 @@ std::string& replace_all(std::string& str, const std::string& old_value, const s
 
 void ARuyiSDKDemoCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
+	return;
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);

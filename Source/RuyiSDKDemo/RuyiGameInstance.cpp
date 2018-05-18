@@ -11,9 +11,23 @@ void URuyiGameInstance::Shutdown()
 	{
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->Unsubscribe("service/inputmanager");
 
-		FRuyiSDKManager::Instance()->ShutDown();
+		FRuyiSDKManager::Instance()->SDK()->RuyiNet->Exit();
+
+		//FRuyiSDKManager::Instance()->ShutDown();
+
+		//FRunnableThread* m_Thread = FRunnableThread::Create(this, TEXT(""), 0, TPri_BelowNormal);;
 	}
 
 	Super::Shutdown();
 }
+
+uint32 URuyiGameInstance::Run() 
+{
+	FRuyiSDKManager::Instance()->SDK()->Subscriber->Unsubscribe("service/inputmanager");
+
+	FRuyiSDKManager::Instance()->ShutDown();
+
+	return 0;
+}
+
 
