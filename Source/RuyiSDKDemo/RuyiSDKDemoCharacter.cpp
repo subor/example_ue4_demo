@@ -9,8 +9,6 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "RuyiSDKManager.h"
-//#include "curl/curl.h"
-//#include "ThirdParty/OpenSSL/1.0.2g/include/Win64/VS2015/openssl/ssl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ARuyiSDKDemoCharacter
@@ -69,10 +67,8 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 
 	if (FRuyiSDKManager::Instance()->IsSDKReady)
 	{
-		//FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/user_service_external");
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmgr_int");
-		//FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler);
-		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler2);
+		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler);
 	}
 
 	PrimaryActorTick.bCanEverTick = true;
@@ -97,8 +93,12 @@ void ARuyiSDKDemoCharacter::Ruyi_StartTest()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ARuyiSDKDemoCharacter::InputStateChangeHandler2(std::string topic, apache::thrift::TBase* msg)
+void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
 {
+	//you can use UE4 engine input system, or you can use input system from sdk.
+	//if you wanna call the input logic in blueprints but still get the input from Ruyi SDK
+	//We recommand you listener all the input in c++ from Ruyi SDK, then call in blueprints
+
 	auto idsc = dynamic_cast<Ruyi::SDK::InputManager::RuyiGamePadInput*>(msg);
 
 	if (idsc == NULL)
@@ -112,23 +112,19 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler2(std::string topic, apache::
 	float leftThumbX = idsc->LeftThumbX * 1.0f / powf(2.0f, 15);
 	float leftThumbY = idsc->LeftThumbY * 1.0f / powf(2.0f, 15);
 
-	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler2 leftThumbX:%f"), leftThumbX);
-
-	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler2 ButtonFlags:%d"), idsc->ButtonFlags);
-
 	if (0 == idsc->ButtonFlags) 
 	{
 		moveXAxis = 0;
 		moveYAxis = 0;
 	}
 
-	//if (abs(leftThumbX) <= 0.1)
+	//if (abs(leftThumbX) <= 0.1f)
 	if(leftThumbX >= -0.1f && leftThumbX <= 0.1f)
 	{
 		moveXAxis = 0;
 	}
 
-	//if (abs(leftThumbY) <= 0.1)
+	//if (abs(leftThumbY) <= 0.1f)
 	if (leftThumbY >= -0.1f && leftThumbY <= 0.1f)
 	{
 		moveYAxis = 0;
@@ -185,169 +181,12 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler2(std::string topic, apache::
 	}
 }
 
-void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
-{
-	//you can use UE4 engine input system, or you can use input system from sdk.
-	//if you wanna call the input logic in blueprints but still get the input from Ruyi SDK
-	//We recommand you listener all the input in c++ from Ruyi SDK, then call in blueprints
-
-	FString fTopic = UTF8_TO_TCHAR(topic.c_str());
-	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler DDDDDDDDDDDDDD topic:%s"), *fTopic);
-
-	auto idsc = dynamic_cast<Ruyi::SDK::UserServiceExternal::InputActionEvent*>(msg);
-
-	if (idsc == NULL)
-	{
-		return;
-	}
-
-	//userId is the id of the current logged account
-	FString fUserId = UTF8_TO_TCHAR(idsc->userId.c_str());
-	FString fAction = UTF8_TO_TCHAR(idsc->action.c_str());
-
-	//std::vector<TriggerKeys>  Triggers is the numbers of current input from any device
-	//TriggerKeys 
-	//DeviceType: to identify your input device
-	//Key: the key of your input device
-	//NewValue/OldValue:  could be three value:0,1,2.  1 means press Down 2 means release 0 not define yet
-	//NewValue is the current key state, if your press down, NewValue will be 1, when you release, NewValue will be 2, OldValue will be 1
-	//action:the Key value of config file.
-
-	//you can judge the input key by "action" value of Triggers structure. The value of "action" can be modified
-	//in config file of the game package. Now I just hard-core in code. We'll try to optimise this part
-	//in future release
-	//all default system action value: (Layer0/RuyiLocalRoot/Resources/configs/UserSetting)
-	//GamePad_LB
-	//GamePad_LT
-	//GamePad_L3
-	//GamePad_RB
-	//GamePad_RT
-	//GamePad_R3
-	//GamePad_UP
-	//GamePad_Down
-	//GamePad_Left
-	//GamePad_Down
-	//GamePad_Home
-	//GamePad_Back
-	//GamePad_Start
-	//GamePad_X
-	//GamePad_Y
-	//GamePad_A
-	//GamePad_B
-	//GamePad_LJoyX
-	//GamePad_LJoyY
-	//GamePad_RJoyX
-	//GamePad_RJoyY
-	int triggerNumber = idsc->Triggers.size();
-
-	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler userId:%s action:%s triggers Num:%d"), *fUserId, *fAction, triggerNumber);
-	std::for_each(idsc->Triggers.begin(), idsc->Triggers.end(), [&](Ruyi::SDK::UserServiceExternal::TriggerKeys& key)
-	{
-		UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler deviceType:%d, key:%d, newValue:%d, oldValue:%d"), key.DeviceType, key.Key, key.NewValue, key.OldValue);
-		
-		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Up")))
-		{
-			moveYAxis = 1;
-		}
-		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Up")))
-		{
-			//Up Button Press
-			moveYAxis = 0;
-		}
-		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Down")))
-		{
-			moveYAxis = -1;
-		}
-		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Down")))
-		{
-			moveYAxis = 0;
-		}
-		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Left")))
-		{
-			moveXAxis = -1;
-		}
-		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Left")))
-		{
-			moveXAxis = 0;
-		}
-		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_Right")))
-		{
-			moveXAxis = 1;
-		}
-		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_Right")))
-		{
-			moveXAxis = 0;
-		}
-		if ((1 == key.NewValue) && (0 == idsc->action.compare("GamePad_X")))
-		{
-			Jump();
-		}
-		if ((2 == key.NewValue) && (0 == idsc->action.compare("GamePad_X")))
-		{
-			StopJumping();
-		}
-		/*
-		if (Ruyi::SDK::GlobalInputDefine::RuyiInputDeviceType::Keyboard == key.DeviceType)
-		{
-			if ((Ruyi::SDK::GlobalInputDefine::Key::W == key.Key || Ruyi::SDK::GlobalInputDefine::Key::Up == key.Key) && (1 == key.NewValue))
-			{
-				//if you wanna call the input logic in blueprints but still get the input from Ruyi SDK
-				//We recommand you listener all the input in c++ from Ruyi SDK, then call in blueprints
-			}
-		} else if (Ruyi::SDK::GlobalInputDefine::RuyiInputDeviceType::XB360 == key.DeviceType)
-		{
-			if ((Ruyi::SDK::GlobalInputDefine::GamepadButtonFlags::DPadUp == key.Key) && (1 == key.NewValue))
-			{
-			}
-		} else if (Ruyi::SDK::GlobalInputDefine::RuyiInputDeviceType::RuyiController == key.DeviceType)
-		{
-			if (Ruyi::SDK::GlobalInputDefine::RuyiControllerKey::eButtonUp == key.Key && (1 == key.NewValue))
-			{
-			}
-		} else {}
-		*/
-	});
-}
-
 void ARuyiSDKDemoCharacter::RuyiInputListener()
 {
 	MoveRight(moveXAxis);
 	MoveForward(moveYAxis);
 }
 
-// Input
-/*
-int TimeCounter = 0;
-float horizontalAxis = 0;
-float verticalAxis = 0;
-void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
-{
-	FString fTopic = FString(topic.c_str());
-
-	if (nullptr == GEngine) return;
-	GEngine->GetWorld();
-	//TimeCounter++;
-
-	//if (TimeCounter > 200)
-	{
-		//auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputDeviceStateChanged*>(msg);
-		auto idsc = dynamic_cast<Ruyi::SDK::InputManager::InputActionTriggered*>(msg);
-		//Ruyi::SDK::InputManager::InputActionTriggered* idsc = (Ruyi::SDK::InputManager::InputActionTriggered*)(msg);
-		//Ruyi::SDK::InputManager::InputActionTriggered* idsc = Cast<Ruyi::SDK::InputManager::InputActionTriggered>(msg);
-
-		//if (idsc == NULL) return;
-		
-		//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler __isset header:%d, x360:%d, dgamepad:%d, djoystick:%d, dkeyboard:%d, dmouse:%d, ruyicontroller:%d !!!"), idsc->__isset.header, idsc->__isset.x360, idsc->__isset.dgamepad, idsc->__isset.djoystick, idsc->__isset.dkeyboard, idsc->__isset.dmouse, idsc->__isset.ruyicontroller);
-		
-		FString deviceId = UTF8_TO_TCHAR(idsc->deviceId.c_str());
-		FString name = UTF8_TO_TCHAR(idsc->name.c_str());
-
-		UE_LOG(CommonLog, Log, TEXT("InputActionTriggered deviceId:%s name:%s"), *deviceId, *name);
-
-		//TimeCounter = 0;
-	}
-}
-*/
 std::string& replace_all(std::string& str, const std::string& old_value, const std::string& new_value)
 {
 	while (true)

@@ -96,7 +96,6 @@ public:
 
 private:
 	void InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg);
-	void InputStateChangeHandler2(std::string topic, apache::thrift::TBase* msg);
 
 	void RuyiInputListener();
 
