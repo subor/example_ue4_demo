@@ -11,7 +11,7 @@ void URuyiGameInstance::Shutdown()
 	{
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->Unsubscribe("service/inputmanager");
 
-		FRuyiSDKManager::Instance()->SDK()->RuyiNet->Exit();
+		FRuyiSDKManager::Instance()->SDK()->RuyiNet->LogoutAccount();
 
 		//FRuyiSDKManager::Instance()->ShutDown();
 

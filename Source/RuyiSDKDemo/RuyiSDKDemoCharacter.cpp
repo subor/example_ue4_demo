@@ -9,6 +9,8 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "RuyiSDKManager.h"
+//#include "curl/curl.h"
+//#include "ThirdParty/OpenSSL/1.0.2g/include/Win64/VS2015/openssl/ssl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ARuyiSDKDemoCharacter
@@ -47,6 +49,8 @@ ARuyiSDKDemoCharacter::ARuyiSDKDemoCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 	IsPaused = false;
+
+	isJump = false;
 }
 
 std::string& replace_all(std::string& str, const std::string& old_value, const std::string& new_value);
@@ -65,8 +69,10 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 
 	if (FRuyiSDKManager::Instance()->IsSDKReady)
 	{
-		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/user_service_external");
-		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler);
+		//FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/user_service_external");
+		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmgr_int");
+		//FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler);
+		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler2);
 	}
 
 	PrimaryActorTick.bCanEverTick = true;
@@ -91,10 +97,98 @@ void ARuyiSDKDemoCharacter::Ruyi_StartTest()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void ARuyiSDKDemoCharacter::InputStateChangeHandler2(std::string topic, apache::thrift::TBase* msg)
+{
+	auto idsc = dynamic_cast<Ruyi::SDK::InputManager::RuyiGamePadInput*>(msg);
+
+	if (idsc == NULL)
+	{
+		return;
+	}
+
+	//note, joystick will call constantly while pushing it, so as the button event while pressing buttons and pushing joystick
+	//please do the proper filter logic if needed
+
+	float leftThumbX = idsc->LeftThumbX * 1.0f / powf(2.0f, 15);
+	float leftThumbY = idsc->LeftThumbY * 1.0f / powf(2.0f, 15);
+
+	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler2 leftThumbX:%f"), leftThumbX);
+
+	//UE_LOG(CommonLog, Log, TEXT("InputStateChangeHandler2 ButtonFlags:%d"), idsc->ButtonFlags);
+
+	if (0 == idsc->ButtonFlags) 
+	{
+		moveXAxis = 0;
+		moveYAxis = 0;
+	}
+
+	//if (abs(leftThumbX) <= 0.1)
+	if(leftThumbX >= -0.1f && leftThumbX <= 0.1f)
+	{
+		moveXAxis = 0;
+	}
+
+	//if (abs(leftThumbY) <= 0.1)
+	if (leftThumbY >= -0.1f && leftThumbY <= 0.1f)
+	{
+		moveYAxis = 0;
+	}
+
+	if (leftThumbX >= 0.5f)
+	{
+		moveXAxis = 1;
+	}
+	if (leftThumbX <= -0.5f)
+	{
+		moveXAxis = -1;
+	}
+
+	if (leftThumbY >= 0.5f)
+	{
+		moveYAxis = 1;
+	}
+	if (leftThumbY <= -0.5f)
+	{
+		moveYAxis = -1;
+	}
+
+	if (Ruyi::SDK::CommonType::RuyiGamePadButtonFlags::GamePad_Up == idsc->ButtonFlags)
+	{
+		moveYAxis = 1;
+	}
+
+	if (Ruyi::SDK::CommonType::RuyiGamePadButtonFlags::GamePad_Down == idsc->ButtonFlags)
+	{
+		moveYAxis = -1;
+	}
+
+	if (Ruyi::SDK::CommonType::RuyiGamePadButtonFlags::GamePad_Left == idsc->ButtonFlags)
+	{
+		moveXAxis = -1;
+	}
+
+	if (Ruyi::SDK::CommonType::RuyiGamePadButtonFlags::GamePad_Right == idsc->ButtonFlags)
+	{
+		moveXAxis = 1;
+	}
+
+	if (Ruyi::SDK::CommonType::RuyiGamePadButtonFlags::GamePad_X == idsc->ButtonFlags && !isJump)
+	{
+		isJump = true;
+		Jump();
+	}
+
+	if (0 == idsc->ButtonFlags && isJump)
+	{
+		isJump = false;
+		StopJumping();
+	}
+}
+
 void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::thrift::TBase* msg)
 {
 	//you can use UE4 engine input system, or you can use input system from sdk.
-	//if if you wanna call the input logic in blueprints but still get the input from Ruyi SDK
+	//if you wanna call the input logic in blueprints but still get the input from Ruyi SDK
 	//We recommand you listener all the input in c++ from Ruyi SDK, then call in blueprints
 
 	FString fTopic = UTF8_TO_TCHAR(topic.c_str());
