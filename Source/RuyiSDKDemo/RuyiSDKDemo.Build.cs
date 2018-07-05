@@ -20,11 +20,14 @@ public class RuyiSDKDemo : ModuleRules
         bUseRTTI = true;
         bEnableExceptions = true;
 
+        //BuildConfiguration.bAllowLTCG = true;
+
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         Definitions.Add("BOOST_ALL_NO_LIB");
+        //PublicDefinitions.Add("BOOST_ALL_NO_LIB");
 
-		PublicDependencyModuleNames.AddRange
+        PublicDependencyModuleNames.AddRange
             (
                 new string[] 
                 {

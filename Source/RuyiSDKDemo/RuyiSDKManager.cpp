@@ -2,7 +2,7 @@
 #include "MainWidget.h"
 #include "RuyiSDKDemoCharacter.h"
 #include "Kismet/GameplayStatics.h"
-#include "boost/container/detail/json.hpp"
+//#include "boost/container/detail/json.hpp"
 
 
 #pragma comment(lib,"urlmon.lib") 
@@ -377,7 +377,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKFriendList()
 {
 	try
 	{
-		Ruyi::RuyiNetFriendListResponse response;
+		RuyiNetFriendListResponse response;
 		m_RuyiSDK->RuyiNet->GetFriendService()->ListFriends(0, response);
 		
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKFriendList reponse.status:%d !!!"), response.status);
@@ -403,11 +403,11 @@ void FRuyiSDKManager::Ruyi_AsyncSDKAddFriends(TArray<FString>& friendIds)
 			string idStr(TCHAR_TO_UTF8(*id));
 
 			//UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKAddFriends add friend id:%s"), *id);
-			Ruyi::RuyiNetAddRemoveFriendResponse response;
+			RuyiNetAddRemoveFriendResponse response;
 			m_RuyiSDK->RuyiNet->GetFriendService()->AddFriend(0, idStr, response);
 		}
 		
-		Ruyi::RuyiNetFriendListResponse response;
+		RuyiNetFriendListResponse response;
 		m_RuyiSDK->RuyiNet->GetFriendService()->ListFriends(0, response);
 
 		ParseFriendListData(response);
@@ -431,12 +431,12 @@ void FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendIds)
 
 			UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends add friend id:%s"), *id);
 			
-			Ruyi::RuyiNetAddRemoveFriendResponse response;
+			RuyiNetAddRemoveFriendResponse response;
 			m_RuyiSDK->RuyiNet->GetFriendService()->RemoveFriend(0, idStr, response);
 		}
 
 		
-		Ruyi::RuyiNetFriendListResponse response;
+		RuyiNetFriendListResponse response;
 		m_RuyiSDK->RuyiNet->GetFriendService()->ListFriends(0, response);
 
 		ParseFriendListData(response);
@@ -453,41 +453,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKRemoveFriends(TArray<FString>& friendIds)
 
 void FRuyiSDKManager::Ruyi_AsyncSDKMatchMakingFindPlayers(int rangeDelta, int numMatches)
 {
-	try
-	{
-		Ruyi::RuyiNetFindPlayersResponse response;
-		m_RuyiSDK->RuyiNet->GetMatchmakingService()->FindPlayers(0, rangeDelta, numMatches, response);
-		
-		if (200 == response.status) 
-		{
-			m_mutex.Lock();
-			MainWidget->Matches.Empty();
-			m_mutex.Unlock();
-
-			std::list<Ruyi::RuyiNetFindPlayersResponse::Data::MatchesFound>::iterator it;
-			for (it = response.data.matchesFound.begin(); it != response.data.matchesFound.end(); ++it)
-			{
-				FRuyiNetProfile playerProfile;
-				
-				playerProfile.profileId = FString(it->playerId.c_str());
-				playerProfile.profileName = FString(it->playerName.c_str());
-				playerProfile.pictureUrl = FString(it->pictureUrl.c_str());
-
-				m_mutex.Lock();
-				MainWidget->Matches.Add(playerProfile);
-				m_mutex.Unlock();
-			}
-		}
-		
-	}
-	catch (exception e)
-	{
-		UE_LOG(CommonLog, Log, TEXT("ARuyiSDKSampleCharacter::MatchMaking_FindPlayers exception  !!!"));
-	}
-
-	MainWidget->IsRequestFinish = true;
-
-	EndThread();
+	
 }
 
 void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score) 
@@ -526,7 +492,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKSave(FString playerId, int score)
 		string localPath = TCHAR_TO_UTF8(*path);
 		string cloudFileName = TCHAR_TO_UTF8(*m_SaveCloudFileName);
 		
-		Ruyi::RuyiNetUploadFileResponse response;
+		RuyiNetUploadFileResponse response;
 		m_RuyiSDK->RuyiNet->GetUserFileService()->UploadFile(0, cloudPath, cloudFileName, true, true, localPath, response);
 		
 		if (200 == response.status)
@@ -553,7 +519,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKLoad(FRuyiNetProfile* profile)
 		string ret;
 		string cloudFileName = TCHAR_TO_UTF8(*m_SaveCloudFileName);
 
-		Ruyi::RuyiNetResponse response;
+		RuyiNetResponse response;
 		m_RuyiSDK->RuyiNet->GetUserFileService()->DownloadFile(0, cloudPath, cloudFileName, response);
 	}catch(exception e)
 	{
@@ -667,7 +633,7 @@ void FRuyiSDKManager::Ruyi_AyncSDKLeaderboard(int startIndex, int endIndex)
 		
 		if (nullptr == CurPlayerProfile) return;
 
-		Ruyi::RuyiNetLeaderboardResponse response;
+		RuyiNetLeaderboardResponse response;
 		m_RuyiSDK->RuyiNet->GetLeaderboardService()->GetGlobalLeaderboardPage(0, CurPlayerProfile->profileId, Ruyi::SDK::BrainCloudApi::SortOrder::type::HIGH_TO_LOW, startIndex, endIndex, response);
 		
 	} catch (exception e) 
@@ -684,7 +650,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKGetProfile(std::string profileId)
 {
 	try 
 	{
-		Ruyi::RuyiNetGetProfileResponse response;
+		RuyiNetGetProfileResponse response;
 		m_RuyiSDK->RuyiNet->GetFriendService()->GetProfile(0, profileId, response);
 		
 	} catch(std::exception e)
@@ -701,8 +667,8 @@ void FRuyiSDKManager::Ruyi_AsyncSDKTelemetryStart()
 {
 	try
 	{
-		Ruyi::RuyiNetTelemetrySession session;
-		Ruyi::RuyiNetTelemetrySessionResponse response;
+		RuyiNetTelemetrySession session;
+		RuyiNetTelemetrySessionResponse response;
 		m_RuyiSDK->RuyiNet->GetTelemetryService()->StartTelemetrySession(0, response, session);
 		m_TelemetrySessionId = session.GetId();
 	}
@@ -720,7 +686,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKTelemetryEnd()
 {
 	try
 	{
-		Ruyi::RuyiNetResponse response;
+		RuyiNetResponse response;
 		m_RuyiSDK->RuyiNet->GetTelemetryService()->EndTelemetrySession(0, m_TelemetrySessionId, response);
 	}
 	catch (std::exception e)
@@ -748,7 +714,7 @@ void FRuyiSDKManager::Ruyi_AsyncSDKDestroy()
 
 #pragma region data handle
 
-void FRuyiSDKManager::ParseFriendListData(Ruyi::RuyiNetFriendListResponse& response)
+void FRuyiSDKManager::ParseFriendListData(RuyiNetFriendListResponse& response)
 {
 	if (response.status == 200)
 	{
@@ -758,7 +724,7 @@ void FRuyiSDKManager::ParseFriendListData(Ruyi::RuyiNetFriendListResponse& respo
 		int friendNum = response.data.response.friends.size();
 		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::ParseFriendListData friendNum:%d !!!"), friendNum);
 
-		std::vector<Ruyi::RuyiNetFriendListResponse::Data::Response::Friend>::iterator it;
+		std::vector<RuyiNetFriendListResponse::Data::Response::Friend>::iterator it;
 		for (it = response.data.response.friends.begin(); it != response.data.response.friends.end(); ++it)
 		{
 			FString fplayerId = FString(it->playerId.c_str());
