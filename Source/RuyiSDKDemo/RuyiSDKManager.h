@@ -21,27 +21,27 @@
 #include "RuyiNet/Response/RuyiNetUploadFileResponse.h"
 #include "RuyiNet/Response/RuyiNetTelemetrySessionResponse.h"
 
-/*
+
 #include "RuyiNet/Service/Friend/RuyiNetFriendService.h"
 #include "RuyiNet/Service/Leaderboard/RuyiNetLeaderboardService.h"
 //#include "RuyiNet/Service/RuyiNetMatchmakingService.h"
 #include "RuyiNet/Service/UserFile/RuyiNetUserFileService.h"
 #include "RuyiNet/Service/Telemetry/RuyiNetTelemetryService.h"
-*/
 
+/*
 #include "RuyiNet/Service/RuyiNetFriendService.h"
 #include "RuyiNet/Service/RuyiNetLeaderboardService.h"
 #include "RuyiNet/Service/RuyiNetMatchmakingService.h"
 #include "RuyiNet/Service/RuyiNetUserFileService.h"
 #include "RuyiNet/Service/RuyiNetTelemetryService.h"
-
+*/
 
 //tempory
 #define APPID "11499"
 #define GAMEID "Shooter"
 
-//using namespace Ruyi::SDK::Online;
-using namespace Ruyi;
+using namespace Ruyi::SDK::Online;
+//using namespace Ruyi;
 
 /// <summary>
 /// RuyiSDk provide most function include console hardware-related function, user-related data transport.

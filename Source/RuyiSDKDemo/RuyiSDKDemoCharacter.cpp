@@ -58,7 +58,7 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	UE_LOG(CommonLog, Log, TEXT("ARuyiSDKDemoCharacter::BeginPlay()"));
-
+	
 	FRuyiSDKManager::Instance()->InitRuyiSDK();
 	
 	const string* pChar = &Ruyi::SDK::Constants::g_ConstantsSDKDataTypes_constants.layer0_publisher_out_uri;
@@ -70,7 +70,7 @@ void ARuyiSDKDemoCharacter::BeginPlay()
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->Subscribe("service/inputmgr_int");
 		FRuyiSDKManager::Instance()->SDK()->Subscriber->AddMessageHandler(this, &ARuyiSDKDemoCharacter::InputStateChangeHandler);
 	}
-
+	
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -83,13 +83,7 @@ void ARuyiSDKDemoCharacter::Tick(float DeltaSeconds)
 
 void ARuyiSDKDemoCharacter::Ruyi_StartTest()
 {
-	/*
-	FRuyiSDKManager::Instance()->SDK()->RuyiNet->Initialise(ToRuyiString("11499"), ToRuyiString("hunter2"), []()
-	{
-		UE_LOG(CommonLog, Log, TEXT("FRuyiSDKManager::InitRuyiSDK RuyiNet OnInitialized !!!"));
-	});*/
-
-	//FRuyiSDKManager::Instance()->SDK()->RuyiNet->Initialise(ToRuyiString("11499"), ToRuyiString("hunter2"), NULL);
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -172,6 +166,17 @@ void ARuyiSDKDemoCharacter::InputStateChangeHandler(std::string topic, apache::t
 	{
 		isJump = true;
 		Jump();
+	}
+
+	if (Ruyi::SDK::CommonType::RuyiGamePadButtonFlags::GamePad_Y == idsc->ButtonFlags && !isJump)
+	{
+		//FRuyiSDKManager::Instance()->SDK()->
+	}
+
+	if (Ruyi::SDK::CommonType::RuyiGamePadButtonFlags::GamePad_B == idsc->ButtonFlags && !isJump)
+	{
+		uint8_t motor1Value = 255, motor1Time = 255, motor2Value = 127, motor2Time = 127;
+		//FRuyiSDKManager::Instance()->SDK()->InputMgr->SetRuyiControllerStatus(4, false, false, false, true, true, false, 0, 0, 0, motor1Value, motor1Time, motor2Value, motor2Time);
 	}
 
 	if (0 == idsc->ButtonFlags && isJump)
